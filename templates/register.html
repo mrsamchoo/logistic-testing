@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}สมัครสมาชิก{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-md p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">&#x1f4dd; สมัครสมาชิก</h1>
+
+        <form method="POST" action="/register" class="space-y-8">
+            <!-- Account Info -->
+            <div>
+                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f512; ข้อมูลบัญชี</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                        <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="your@email.com">
+                        <p class="text-xs text-gray-400 mt-1">ใช้สำหรับกู้รหัสผ่าน กรณีลืม</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                            <input type="password" name="password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="อย่างน้อย 6 ตัวอักษร">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
+                            <input type="password" name="confirm_password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="กรอกรหัสผ่านอีกครั้ง">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <!-- Sender Info -->
+            <div>
+                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f1fa;&#x1f1f8; ที่อยู่ผู้ส่ง (อเมริกา)</h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                            <input type="text" name="sender_first_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="First Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                            <input type="text" name="sender_last_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="Last Name">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                        <textarea name="sender_address" required rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="123 Main St, City, State, ZIP"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+                        <input type="tel" name="sender_phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <!-- Receiver Info -->
+            <div>
+                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f1f9;&#x1f1ed; ที่อยู่ปลายทาง (ไทย)</h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                            <input type="text" name="receiver_first_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อผู้รับ">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                            <input type="text" name="receiver_last_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="นามสกุลผู้รับ">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                        <textarea name="receiver_address" required rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="123/4 ถ.สุขุมวิท แขวง... เขต... กรุงเทพฯ 10110"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+                        <input type="tel" name="receiver_phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="081-234-5678">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-lg">ลงทะเบียน</button>
+        </form>
+
+        <p class="text-center text-sm text-gray-400 mt-4">มีบัญชีอยู่แล้ว? <a href="/customer" class="text-amber-600 hover:underline">เข้าสู่ระบบ</a></p>
+    </div>
+</div>
+{% endblock %}

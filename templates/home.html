@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}หน้าแรก — ระบบติดตามพัสดุ US-TH{% endblock %}
+
+{% block content %}
+<!-- Hero + Search -->
+<div class="text-center mb-10">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">&#x1f4e6; ระบบติดตามพัสดุ US-Thailand</h1>
+    <p class="text-gray-500 mb-6">ค้นหาสถานะพัสดุของคุณด้วยหมายเลขติดตาม</p>
+
+    <form method="POST" action="/track" class="max-w-xl mx-auto flex gap-2">
+        <input type="text" name="tracking_number" required
+            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            placeholder="กรอกหมายเลขติดตาม เช่น TH20260224A001">
+        <button type="submit"
+            class="px-6 py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
+            &#x1f50d; ค้นหา
+        </button>
+    </form>
+</div>
+
+<!-- Image Carousel — Logistics -->
+<div class="mb-10">
+    <div class="relative overflow-hidden rounded-xl">
+        <div id="carousel" class="flex transition-transform duration-500 ease-in-out">
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1494412574643-ff11b0a5eb19?w=1200&h=400&fit=crop&crop=center" alt="Cargo Ship" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=1200&h=400&fit=crop&crop=center" alt="Warehouse" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&h=400&fit=crop&crop=center" alt="Shipping Containers" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&h=400&fit=crop&crop=center" alt="Container Port" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=1200&h=400&fit=crop&crop=center" alt="Air Cargo" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1473042904451-00171c69419d?w=1200&h=400&fit=crop&crop=center" alt="Delivery Truck" class="w-full h-64 object-cover rounded-xl"></div>
+        </div>
+        <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white text-lg">&#x276E;</button>
+        <button onclick="nextSlide()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white text-lg">&#x276F;</button>
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2" id="dots"></div>
+    </div>
+</div>
+
+<!-- Testimonials -->
+<div class="mb-10">
+    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">&#x2b50; รีวิวจากลูกค้า</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- 1 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">K</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณกัญญา</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"บริการดีมาก ส่งของจาก US มาถึงไทยไม่เกิน 7 วันทำการ แพ็คของดี ไม่เสียหาย แนะนำเลยค่ะ"</p>
+        </div>
+        <!-- 2 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">P</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณประเสริฐ</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ใช้บริการมา 3 ปี ส่งของทางอากาศมาตลอด ราคาดี เชื่อถือได้ ทีมงานตอบไว้มากครับ"</p>
+        </div>
+        <!-- 3 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">S</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณสมศรี</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"สะดวกมากค่ะ สั่งของจาก Amazon แล้วส่งมาที่ warehouse ง่ายมาก ติดตามสถานะได้ตลอด 24 ชม."</p>
+        </div>
+        <!-- 4 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">W</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณวิชัย</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ส่งอะไหล่รถจาก eBay มาไทย ของถึงเร็วมากครับ แพ็คอย่างดี ไม่บุบไม่เสียหาย ประทับใจมาก"</p>
+        </div>
+        <!-- 5 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">N</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณนภา</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ราคาดีกว่าที่อื่นเยอะเลยค่ะ ส่งกระเป๋า 3 ใบจาก outlet ที่อเมริกา มาถึงปลอดภัยทุกใบ"</p>
+        </div>
+        <!-- 6 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">T</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณธนพล</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ส่งทาง Air freight ของถึงไวมาก ระบบ tracking ดีมาก รู้ตลอดว่าของอยู่ไหน อัพเดทสถานะตลอด"</p>
+        </div>
+        <!-- 7 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">A</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณอรุณี</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"เปิดร้านออนไลน์ขายของนำเข้า ใช้บริการส่งของมาตลอด ทุกออเดอร์ไม่เคยมีปัญหาเลยค่ะ"</p>
+        </div>
+        <!-- 8 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">C</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณชาญ</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ส่งอุปกรณ์คอมพิวเตอร์มาจาก Newegg ทีมงานดูแลของดีมาก มีฟิล์มกันกระแทกครบ ปลอดภัย 100%"</p>
+        </div>
+        <!-- 9 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">M</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณมาลี</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ตอบ Line ไวมากค่ะ มีปัญหาอะไรแอดมินช่วยแก้ไขให้ทันที ประทับใจการบริการหลังการขาย"</p>
+        </div>
+        <!-- 10 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">R</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณรัชนี</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"สั่งวิตามินกับเครื่องสำอางจาก iHerb แล้วส่งผ่าน BSS สะดวกมากค่ะ ราคาถูกกว่าส่งเองเยอะ"</p>
+        </div>
+        <!-- 11 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">D</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณดนัย</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"ส่งพัสดุหลายกล่องจาก US กลับไทย 5 วันก็ถึงแล้ว ทีมงานรวมกล่องให้เรียบร้อย ประหยัดค่าส่งครับ"</p>
+        </div>
+        <!-- 12 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">J</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณจิราพร</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"เพิ่งเริ่มใช้บริการค่ะ สมัครง่าย ได้รหัสลูกค้าเลย กรอกที่อยู่ warehouse ตอนสั่งของก็เสร็จ"</p>
+        </div>
+        <!-- 13 -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">B</div>
+                <div>
+                    <p class="font-semibold text-gray-800">คุณบุญมี</p>
+                    <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">"เป็นลูกค้า VIP ได้เรทพิเศษ คุ้มมากครับ ส่งของทุกอาทิตย์ ไม่เคยผิดหวังเลย บริการระดับสากล"</p>
+        </div>
+    </div>
+</div>
+
+<!-- Show shipments if customer is logged in -->
+{% if customer and shipments %}
+<div class="bg-white rounded-xl shadow-sm p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">&#x1f4cb; สถานะพัสดุของคุณ ({{ customer.customer_code }})</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">หมายเลขติดตาม</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">รายละเอียด</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Port</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">น้ำหนัก</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for s in shipments %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3"><a href="/track/{{ s.tracking_number }}" class="text-amber-600 font-medium hover:underline">{{ s.tracking_number }}</a></td>
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ s.description }}</td>
+                    <td class="px-4 py-3">{% if s.port %}<span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono font-bold">{{ s.port }}</span>{% else %}-{% endif %}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ s.weight }}</td>
+                    <td class="px-4 py-3">
+                        {% if s.status == 'delivered' %}<span class="inline-block bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'customs' %}<span class="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'in_transit' %}<span class="inline-block bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% else %}<span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ s.created_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif customer and not shipments %}
+<div class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400"><p>&#x1f4ed; ยังไม่มีพัสดุ</p></div>
+{% endif %}
+
+<script>
+let cur = 0;
+const c = document.getElementById('carousel');
+const total = c.children.length;
+const dots = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i === 0 ? 'bg-yellow-500' : 'bg-white/60');
+    d.onclick = () => go(i);
+    dots.appendChild(d);
+}
+function go(n) { cur = ((n % total) + total) % total; c.style.transform = `translateX(-${cur*100}%)`; [...dots.children].forEach((d,i) => d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i===cur?'bg-yellow-500':'bg-white/60')); }
+function nextSlide() { go(cur+1); }
+function prevSlide() { go(cur-1); }
+setInterval(nextSlide, 5000);
+</script>
+{% endblock %}

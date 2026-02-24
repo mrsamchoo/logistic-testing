@@ -1,0 +1,11 @@
+{
+    "tiers": {
+        "bronze": {"rate": 700, "label": "Bronze", "label_th": "บรอนซ์"},
+        "gold": {"rate": 675, "label": "Gold", "label_th": "โกลด์"},
+        "vip": {"rate": 625, "label": "VIP", "label_th": "VIP"}
+    },
+    "currency": "THB",
+    "unit": "kg",
+    "updated_at": null,
+    "updated_by": null
+}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}ติดตามพัสดุ — {{ tracking_number }}{% endblock %}
+
+{% block content %}
+{% if shipment %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-md p-8">
+        <h1 class="text-xl font-bold text-gray-800 mb-1">&#x1f4e6; หมายเลขติดตาม</h1>
+        <p class="text-2xl font-mono font-bold text-amber-600 mb-6">{{ shipment.tracking_number }}</p>
+
+        <div class="mb-8">
+            {% set status_list = ["pending", "picked_up", "in_transit", "customs", "delivered"] %}
+            {% set current_index = status_list.index(shipment.status) if shipment.status in status_list else 0 %}
+            <div class="flex items-center justify-between relative">
+                <div class="absolute top-5 left-0 right-0 h-1 bg-gray-200 rounded"></div>
+                <div class="absolute top-5 left-0 h-1 bg-yellow-500 rounded transition-all" style="width: {{ (current_index / 4 * 100) | int }}%"></div>
+                {% for status_key in status_list %}
+                {% set idx = loop.index0 %}
+                <div class="relative z-10 flex flex-col items-center" style="width: 20%">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold {% if idx <= current_index %}bg-yellow-500 text-white{% else %}bg-gray-200 text-gray-400{% endif %}">
+                        {% if idx < current_index %}&#x2713;{% elif idx == current_index %}&#x25CF;{% else %}{{ idx + 1 }}{% endif %}
+                    </div>
+                    <span class="text-xs mt-2 text-center {% if idx <= current_index %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">{{ STATUS_MAP[status_key] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">รายละเอียด</span><p class="font-medium text-gray-800">{{ shipment.description or '-' }}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">น้ำหนัก</span><p class="font-medium text-gray-800">{{ shipment.weight or '-' }}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">Port</span><p class="font-medium text-gray-800">{% if shipment.port %}<span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono font-bold">{{ shipment.port }}</span>{% else %}-{% endif %}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">รหัสลูกค้า</span><p class="font-medium text-gray-800">{{ shipment.customer_code[:3] }}***</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">ผู้รับ</span><p class="font-medium text-gray-800">{{ shipment.receiver_first_name }} {{ shipment.receiver_last_name }}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">วันที่สร้าง</span><p class="font-medium text-gray-800">{{ shipment.created_at[:10] }}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><span class="text-gray-400">อัพเดทล่าสุด</span><p class="font-medium text-gray-800">{{ shipment.updated_at[:16] }}</p></div>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">&#x1f4f7; รูปภาพพัสดุ</h2>
+            {% set photo_list = shipment.photos.split(',') if shipment.photos else [] %}
+            {% if photo_list and photo_list[0] %}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for photo_url in photo_list %}
+                <a href="{{ photo_url }}" target="_blank" class="block rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-shadow">
+                    <img src="{{ photo_url }}" alt="รูปพัสดุ" class="w-full h-32 object-cover bg-gray-100">
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-gray-50 rounded-lg p-8 text-center text-gray-400">
+                <div class="text-3xl mb-2">&#x1f4f7;</div>
+                <p class="text-sm">ยังไม่มีรูปภาพ</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="max-w-lg mx-auto text-center">
+    <div class="bg-white rounded-2xl shadow-md p-8">
+        <div class="text-6xl mb-4">&#x26a0;&#xfe0f;</div>
+        <h1 class="text-xl font-bold text-gray-800 mb-2">ไม่พบหมายเลขติดตาม</h1>
+        <p class="text-gray-500 mb-4 font-mono">{{ tracking_number }}</p>
+        <a href="/" class="inline-block bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition-colors">กลับหน้าแรก</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
