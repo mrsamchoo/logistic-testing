@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Admin — ลูกค้า {{ customer.customer_code }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+        <a href="/admin" class="text-gray-400 hover:text-gray-600">&larr; กลับ</a>
+        <h1 class="text-2xl font-bold text-gray-800">&#x1f464; รายละเอียดลูกค้า</h1>
+        {% if admin_role == 'super_admin' %}
+            <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">Super Admin</span>
+        {% else %}
+            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">Admin</span>
+        {% endif %}
+    </div>
+    <a href="/admin/logout" class="text-sm text-gray-500 hover:text-red-500">ออกจากระบบ</a>
+</div>
+
+<!-- Customer Header Card -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-3xl">&#x1f464;</div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-lg font-bold font-mono text-amber-600">{{ customer.customer_code }}</span>
+                    <span class="text-sm font-mono text-blue-600">{{ customer.sea_code }}</span>
+                    {% if customer.location_type == 'us' %}
+                        <span class="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">&#x1f1fa;&#x1f1f8; US</span>
+                    {% else %}
+                        <span class="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">&#x1f1f9;&#x1f1ed; TH</span>
+                    {% endif %}
+                    {% if customer.tier == 'vip' %}
+                        <span class="inline-block bg-yellow-400 text-white px-2 py-0.5 rounded text-xs font-bold">&#x1f451; VIP</span>
+                    {% elif customer.tier == 'gold' %}
+                        <span class="inline-block bg-yellow-300 text-yellow-900 px-2 py-0.5 rounded text-xs font-bold">&#x1f947; Gold</span>
+                    {% else %}
+                        <span class="inline-block bg-orange-200 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">&#x1f949; Bronze</span>
+                    {% endif %}
+                    {% if customer.is_active == 0 %}
+                        <span class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">&#x26d4; ปิดใช้งาน</span>
+                    {% else %}
+                        <span class="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">&#x2705; ใช้งาน</span>
+                    {% endif %}
+                </div>
+                {% if customer.location_type == 'us' %}
+                    <p class="text-gray-600 mt-1">{{ customer.sender_first_name }} {{ customer.sender_last_name }}
+                        {% if customer.city %}<span class="text-gray-400">— {{ US_CITIES.get(customer.city, customer.city) }}</span>{% endif %}
+                    </p>
+                {% endif %}
+                <p class="text-gray-400 text-sm">สมัครเมื่อ {{ customer.created_at[:10] }} | อีเมล: {{ customer.email or '-' }}</p>
+            </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button onclick="document.getElementById('edit-section').classList.toggle('hidden')"
+                class="px-4 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 transition-colors font-semibold">
+                &#x270f;&#xfe0f; แก้ไขข้อมูล
+            </button>
+            <form method="POST" action="/admin/customer/{{ customer.customer_code }}/reset-password"
+                onsubmit="return confirm('ต้องการรีเซ็ตรหัสผ่านลูกค้านี้?')">
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-semibold">
+                    &#x1f510; รีเซ็ตรหัสผ่าน
+                </button>
+            </form>
+            {% if customer.is_active == 0 %}
+            <form method="POST" action="/admin/customer/{{ customer.customer_code }}/activate"
+                onsubmit="return confirm('เปิดใช้งานลูกค้านี้อีกครั้ง?')">
+                <button type="submit" class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors font-semibold">
+                    &#x2705; เปิดใช้งาน
+                </button>
+            </form>
+            {% else %}
+            <form method="POST" action="/admin/customer/{{ customer.customer_code }}/deactivate"
+                onsubmit="return confirm('ปิดใช้งานลูกค้านี้? ลูกค้าจะล็อกอินไม่ได้')">
+                <button type="submit" class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors font-semibold">
+                    &#x26d4; ปิดใช้งาน
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Info (Hidden by default) -->
+<div id="edit-section" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+    <h2 class="text-lg font-bold text-amber-800 mb-4">&#x270f;&#xfe0f; แก้ไขข้อมูลลูกค้า</h2>
+    <form method="POST" action="/admin/customer/{{ customer.customer_code }}/edit">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
+                <select name="location_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                    {% for key, label in LOCATION_TYPES.items() %}
+                        <option value="{{ key }}" {% if customer.location_type == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">เมือง (US)</label>
+                <select name="city" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                    <option value="">-- ไม่ระบุ --</option>
+                    {% for key, label in US_CITIES.items() %}
+                        <option value="{{ key }}" {% if customer.city == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ (ผู้ส่ง)</label>
+                <input type="text" name="sender_first_name" value="{{ customer.sender_first_name }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล (ผู้ส่ง)</label>
+                <input type="text" name="sender_last_name" value="{{ customer.sender_last_name }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ผู้ส่ง</label>
+                <input type="text" name="sender_address" value="{{ customer.sender_address }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรผู้ส่ง</label>
+                <input type="text" name="sender_phone" value="{{ customer.sender_phone }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <input type="email" name="email" value="{{ customer.email }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button type="submit" class="px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-semibold">
+                &#x2713; บันทึกการเปลี่ยนแปลง
+            </button>
+            <button type="button" onclick="document.getElementById('edit-section').classList.add('hidden')"
+                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                ยกเลิก
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Rate Info -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-3">&#x1f4b0; อัตราค่าขนส่ง</h2>
+    <div class="flex items-center gap-4 flex-wrap">
+        <div class="text-center bg-gray-50 rounded-lg px-6 py-3">
+            <div class="text-xs text-gray-500">Tier</div>
+            <div class="text-lg font-bold capitalize
+                {% if tier == 'vip' %}text-yellow-500{% elif tier == 'gold' %}text-yellow-600{% else %}text-orange-600{% endif %}">
+                {{ tier }}
+            </div>
+        </div>
+        <div class="text-center bg-gray-50 rounded-lg px-6 py-3">
+            <div class="text-xs text-gray-500">เรท (ต่อ kg)</div>
+            <div class="text-lg font-bold text-green-600">{{ effective_rate }} &#xe3f;</div>
+        </div>
+        {% if customer.custom_rate %}
+        <div class="text-center bg-green-50 border border-green-200 rounded-lg px-6 py-3">
+            <div class="text-xs text-green-600">เรทพิเศษ</div>
+            <div class="text-lg font-bold text-green-700">{{ customer.custom_rate }} &#xe3f;</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Destination Addresses -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-3">&#x1f4cd; ที่อยู่ปลายทาง ({{ addresses|length }} รายการ)</h2>
+    {% if addresses %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for addr in addresses %}
+        <div class="border border-gray-200 rounded-lg p-4 {% if addr.is_default %}border-amber-300 bg-amber-50{% endif %}">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="font-semibold text-gray-800">{{ addr.nickname }}</span>
+                {% if addr.is_default %}
+                    <span class="bg-amber-200 text-amber-800 text-xs px-1.5 py-0.5 rounded">ค่าเริ่มต้น</span>
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-600">{{ addr.receiver_first_name }} {{ addr.receiver_last_name }}</p>
+            <p class="text-sm text-gray-500 mt-1">{{ addr.receiver_address }}</p>
+            <p class="text-sm text-gray-500">&#x1f4de; {{ addr.receiver_phone }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">ยังไม่มีที่อยู่ปลายทาง</p>
+    {% endif %}
+</div>
+
+<!-- Inbound Packages -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-3">&#x1f4e5; พัสดุขาเข้า ({{ inbound|length }} รายการล่าสุด)</h2>
+    {% if inbound %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ขนส่ง</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tracking</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">รายละเอียด</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for p in inbound %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-2">
+                        <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">{{ INBOUND_CARRIERS.get(p.carrier, p.carrier) }}</span>
+                    </td>
+                    <td class="px-3 py-2 font-mono text-sm text-gray-700">{{ p.carrier_tracking_number }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">{{ p.description or '-' }}</td>
+                    <td class="px-3 py-2">
+                        {% if p.status == 'received' %}
+                            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ INBOUND_STATUS_MAP[p.status] }}</span>
+                        {% elif p.status == 'processing' %}
+                            <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ INBOUND_STATUS_MAP[p.status] }}</span>
+                        {% elif p.status == 'in_transit' %}
+                            <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ INBOUND_STATUS_MAP[p.status] }}</span>
+                        {% else %}
+                            <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">{{ INBOUND_STATUS_MAP[p.status] }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-500">{{ p.submitted_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">ยังไม่มีพัสดุขาเข้า</p>
+    {% endif %}
+</div>
+
+<!-- Shipments -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold text-gray-800">&#x1f4e6; พัสดุ ({{ shipments|length }} รายการล่าสุด)</h2>
+        <a href="/admin/shipments/create?customer={{ customer.customer_code }}"
+            class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors font-semibold">
+            + สร้าง Shipment ใหม่
+        </a>
+    </div>
+    {% if shipments %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tracking</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">รายละเอียด</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ที่อยู่ปลายทาง</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Port</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for s in shipments %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-2">
+                        <a href="/track/{{ s.tracking_number }}" class="text-amber-600 font-mono text-sm hover:underline">{{ s.tracking_number }}</a>
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-700">{{ s.description or '-' }}</td>
+                    <td class="px-3 py-2">
+                        {% if s.dest_nickname %}
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">{{ s.dest_nickname }}</span>
+                            <span class="text-xs text-gray-400 block mt-0.5">{{ s.dest_first_name }} {{ s.dest_last_name }}</span>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">ยังไม่ได้เลือก</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2">
+                        {% if s.port %}
+                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-mono font-bold">{{ s.port }}</span>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2">
+                        {% if s.status == 'pending' %}
+                            <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'picked_up' %}
+                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'in_transit' %}
+                            <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'customs' %}
+                            <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% elif s.status == 'delivered' %}
+                            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ STATUS_MAP[s.status] }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-500">{{ s.updated_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">ยังไม่มีพัสดุ</p>
+    {% endif %}
+</div>
+{% endblock %}

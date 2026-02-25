@@ -179,6 +179,8 @@ def init_db():
                          ("location_type", "'th'"), ("city", "''")]:
         if col not in cust_columns:
             conn.execute(f"ALTER TABLE customers ADD COLUMN {col} TEXT DEFAULT {default}")
+    if "is_active" not in cust_columns:
+        conn.execute("ALTER TABLE customers ADD COLUMN is_active INTEGER DEFAULT 1")
 
     ship_columns = [row[1] for row in conn.execute("PRAGMA table_info(shipments)").fetchall()]
     if "port" not in ship_columns:
@@ -434,16 +436,20 @@ def get_customer_by_code(customer_code):
 
 
 def get_customer_by_credentials(code, password):
-    """Verify customer login: code + password."""
+    """Verify customer login: code + password. Returns None if inactive."""
     conn = get_db()
     customer = conn.execute(
         "SELECT * FROM customers WHERE customer_code = ? OR sea_code = ?",
         (code, code),
     ).fetchone()
     conn.close()
-    if customer and customer["password_hash"] and check_password_hash(customer["password_hash"], password):
-        return customer
-    return None
+    if not customer or not customer["password_hash"]:
+        return None
+    if not check_password_hash(customer["password_hash"], password):
+        return None
+    if customer["is_active"] == 0:
+        return "inactive"
+    return customer
 
 
 def get_customer_by_email(email):
@@ -496,10 +502,12 @@ def reset_customer_password(token, new_password):
     return True
 
 
-def get_all_customers(search=None):
+def get_all_customers(search=None, show_inactive=False):
     conn = get_db()
     query = "SELECT * FROM customers WHERE 1=1"
     params = []
+    if not show_inactive:
+        query += " AND (is_active = 1 OR is_active IS NULL)"
     if search:
         term = f"%{search}%"
         query += " AND (customer_code LIKE ? OR sea_code LIKE ? OR sender_first_name LIKE ? OR sender_last_name LIKE ? OR receiver_first_name LIKE ? OR receiver_last_name LIKE ?)"
@@ -525,12 +533,12 @@ def update_customer_tier(customer_code, tier, custom_rate=None):
 # ============================================================
 
 
-def add_shipment(customer_code, description="", weight=""):
+def add_shipment(customer_code, description="", weight="", port="", destination_address_id=None):
     tracking = generate_tracking_number()
     conn = get_db()
     conn.execute(
-        "INSERT INTO shipments (tracking_number, customer_code, description, weight) VALUES (?, ?, ?, ?)",
-        (tracking, customer_code, description, weight),
+        "INSERT INTO shipments (tracking_number, customer_code, description, weight, port, destination_address_id) VALUES (?, ?, ?, ?, ?, ?)",
+        (tracking, customer_code, description, weight, port, destination_address_id),
     )
     conn.commit()
     conn.close()
@@ -707,6 +715,52 @@ def admin_set_shipment_destination(shipment_id, address_id):
         "UPDATE shipments SET destination_address_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (address_id, shipment_id),
     )
+    conn.commit()
+    conn.close()
+
+
+# ============================================================
+# Admin Customer Management
+# ============================================================
+
+
+def update_customer_info(customer_code, **fields):
+    """Update customer fields. Allowed: sender_first_name, sender_last_name,
+    sender_address, sender_phone, email, location_type, city."""
+    allowed = {"sender_first_name", "sender_last_name", "sender_address",
+               "sender_phone", "email", "location_type", "city"}
+    updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not updates:
+        return
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [customer_code]
+    conn = get_db()
+    conn.execute(f"UPDATE customers SET {set_clause} WHERE customer_code = ?", values)
+    conn.commit()
+    conn.close()
+
+
+def admin_reset_customer_password(customer_code, new_password):
+    conn = get_db()
+    pw_hash = generate_password_hash(new_password)
+    conn.execute(
+        "UPDATE customers SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE customer_code = ?",
+        (pw_hash, customer_code),
+    )
+    conn.commit()
+    conn.close()
+
+
+def deactivate_customer(customer_code):
+    conn = get_db()
+    conn.execute("UPDATE customers SET is_active = 0 WHERE customer_code = ?", (customer_code,))
+    conn.commit()
+    conn.close()
+
+
+def activate_customer(customer_code):
+    conn = get_db()
+    conn.execute("UPDATE customers SET is_active = 1 WHERE customer_code = ?", (customer_code,))
     conn.commit()
     conn.close()
 

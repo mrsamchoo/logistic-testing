@@ -20,6 +20,8 @@ from database import (
     add_inbound_package, get_inbound_by_customer, get_inbound_by_id,
     delete_inbound_package, get_all_inbound_packages, update_inbound_status,
     INBOUND_CARRIERS, INBOUND_STATUS_MAP,
+    update_customer_info, admin_reset_customer_password,
+    deactivate_customer, activate_customer, add_shipment,
 )
 
 app = Flask(__name__)
@@ -198,9 +200,16 @@ def customer_login():
     if request.method == "POST":
         code = request.form.get("customer_code", "").strip().upper()
         password = request.form.get("password", "").strip()
-        customer = get_customer_by_credentials(code, password)
-        if customer:
-            air_code = customer["customer_code"]
+        result = get_customer_by_credentials(code, password)
+        if result == "inactive":
+            flash("บัญชีของคุณถูกปิดใช้งาน กรุณาติดต่อแอดมิน", "error")
+            return redirect(url_for("customer_login"))
+        if result:
+            air_code = result["customer_code"]
+            # ล้าง admin session ออกเมื่อลูกค้าล็อกอิน
+            session.pop("admin_id", None)
+            session.pop("admin_role", None)
+            session.pop("admin_username", None)
             session["customer_code"] = air_code
             return redirect(url_for("customer_portal", code=air_code))
         else:
@@ -493,6 +502,8 @@ def admin_login():
         password = request.form.get("password", "")
         admin = get_admin_by_credentials(username, password)
         if admin:
+            # ล้าง customer session ออกเมื่อ admin ล็อกอิน
+            session.pop("customer_code", None)
             session["admin_id"] = admin["id"]
             session["admin_role"] = admin["role"]
             session["admin_username"] = admin["username"]
@@ -521,11 +532,169 @@ def admin_logout():
 @admin_required
 def admin_dashboard():
     search = request.args.get("search", "").strip() or None
+    show_inactive = request.args.get("show_inactive") == "1"
     stats = get_stats()
-    customers = get_all_customers(search=search)
+    customers = get_all_customers(search=search, show_inactive=show_inactive)
     return render_template("admin_dashboard.html", stats=stats, customers=customers,
-                           search=search, STATUS_MAP=STATUS_MAP, active_tab="customers",
+                           search=search, show_inactive=show_inactive,
+                           STATUS_MAP=STATUS_MAP, active_tab="customers",
                            LOCATION_TYPES=LOCATION_TYPES, US_CITIES=US_CITIES)
+
+
+# ============================================================
+# Admin — Customer Management
+# ============================================================
+
+
+@app.route("/admin/customer/add", methods=["GET", "POST"])
+@admin_required
+def admin_customer_add():
+    if request.method == "POST":
+        location_type = request.form.get("location_type", "").strip()
+        city = request.form.get("city", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+        if location_type not in ("us", "th"):
+            flash("กรุณาเลือกประเภทลูกค้า", "error")
+            return redirect(url_for("admin_customer_add"))
+        if not email or not password:
+            flash("กรุณากรอกอีเมลและรหัสผ่าน", "error")
+            return redirect(url_for("admin_customer_add"))
+        existing = get_customer_by_email(email)
+        if existing:
+            flash("อีเมลนี้ถูกใช้งานแล้ว", "error")
+            return redirect(url_for("admin_customer_add"))
+        sender_first_name = request.form.get("sender_first_name", "").strip()
+        sender_last_name = request.form.get("sender_last_name", "").strip()
+        sender_address = request.form.get("sender_address", "").strip()
+        sender_phone = request.form.get("sender_phone", "").strip()
+        if location_type == "us":
+            if not city or city not in US_CITIES:
+                flash("กรุณาเลือกเมือง", "error")
+                return redirect(url_for("admin_customer_add"))
+            if not all([sender_first_name, sender_last_name, sender_address, sender_phone]):
+                flash("กรุณากรอกข้อมูลผู้ส่งให้ครบ", "error")
+                return redirect(url_for("admin_customer_add"))
+        addr_first = request.form.get("addr_first_name", "").strip()
+        addr_last = request.form.get("addr_last_name", "").strip()
+        addr_address = request.form.get("addr_address", "").strip()
+        addr_phone = request.form.get("addr_phone", "").strip()
+        addr_nickname = request.form.get("addr_nickname", "").strip()
+        if not all([addr_first, addr_last, addr_address, addr_phone]):
+            flash("กรุณากรอกที่อยู่ปลายทางให้ครบ", "error")
+            return redirect(url_for("admin_customer_add"))
+        success, result, customer_id = add_customer(
+            location_type=location_type, city=city,
+            sender_first_name=sender_first_name, sender_last_name=sender_last_name,
+            sender_address=sender_address, sender_phone=sender_phone,
+            email=email, password=password,
+        )
+        if success:
+            add_customer_address(customer_id, addr_nickname or "ที่อยู่หลัก",
+                                 addr_first, addr_last, addr_address, addr_phone, is_default=1)
+            flash(f"เพิ่มลูกค้า {result} สำเร็จ", "success")
+            return redirect(url_for("admin_customer_detail", code=result))
+        else:
+            flash(result, "error")
+            return redirect(url_for("admin_customer_add"))
+    return render_template("admin_customer_add.html", US_CITIES=US_CITIES,
+                           LOCATION_TYPES=LOCATION_TYPES, active_tab="customers")
+
+
+@app.route("/admin/customer/<code>")
+@admin_required
+def admin_customer_detail(code):
+    customer = get_customer_by_code(code)
+    if not customer:
+        flash("ไม่พบลูกค้า", "error")
+        return redirect(url_for("admin_dashboard"))
+    addresses = get_customer_addresses(customer["id"])
+    shipments = get_shipments_by_customer(customer["customer_code"], limit=20)
+    inbound = get_inbound_by_customer(customer["customer_code"], limit=10)
+    tier, tier_rate, effective_rate = get_customer_rate(customer["customer_code"])
+    return render_template("admin_customer_detail.html", customer=customer,
+                           addresses=addresses, shipments=shipments, inbound=inbound,
+                           tier=tier, effective_rate=effective_rate,
+                           STATUS_MAP=STATUS_MAP, INBOUND_STATUS_MAP=INBOUND_STATUS_MAP,
+                           INBOUND_CARRIERS=INBOUND_CARRIERS,
+                           US_CITIES=US_CITIES, LOCATION_TYPES=LOCATION_TYPES,
+                           PORTS=PORTS, active_tab="customers")
+
+
+@app.route("/admin/customer/<code>/edit", methods=["POST"])
+@admin_required
+def admin_customer_edit(code):
+    customer = get_customer_by_code(code)
+    if not customer:
+        flash("ไม่พบลูกค้า", "error")
+        return redirect(url_for("admin_dashboard"))
+    update_customer_info(
+        code,
+        sender_first_name=request.form.get("sender_first_name", "").strip() or None,
+        sender_last_name=request.form.get("sender_last_name", "").strip() or None,
+        sender_address=request.form.get("sender_address", "").strip() or None,
+        sender_phone=request.form.get("sender_phone", "").strip() or None,
+        email=request.form.get("email", "").strip() or None,
+        location_type=request.form.get("location_type", "").strip() or None,
+        city=request.form.get("city", "").strip() or None,
+    )
+    flash("อัพเดทข้อมูลลูกค้าสำเร็จ", "success")
+    return redirect(url_for("admin_customer_detail", code=code))
+
+
+@app.route("/admin/customer/<code>/reset-password", methods=["POST"])
+@admin_required
+def admin_customer_reset_password(code):
+    customer = get_customer_by_code(code)
+    if not customer:
+        flash("ไม่พบลูกค้า", "error")
+        return redirect(url_for("admin_dashboard"))
+    import secrets as sec
+    temp_password = sec.token_urlsafe(8)
+    admin_reset_customer_password(code, temp_password)
+    flash(f"รีเซ็ตรหัสผ่านสำเร็จ — รหัสผ่านชั่วคราว: {temp_password}", "success")
+    return redirect(url_for("admin_customer_detail", code=code))
+
+
+@app.route("/admin/customer/<code>/deactivate", methods=["POST"])
+@admin_required
+def admin_customer_deactivate(code):
+    deactivate_customer(code)
+    flash(f"ปิดใช้งานลูกค้า {code} สำเร็จ", "success")
+    return redirect(url_for("admin_customer_detail", code=code))
+
+
+@app.route("/admin/customer/<code>/activate", methods=["POST"])
+@admin_required
+def admin_customer_activate(code):
+    activate_customer(code)
+    flash(f"เปิดใช้งานลูกค้า {code} สำเร็จ", "success")
+    return redirect(url_for("admin_customer_detail", code=code))
+
+
+@app.route("/admin/shipments/create", methods=["GET", "POST"])
+@admin_required
+def admin_shipment_create():
+    if request.method == "POST":
+        customer_code = request.form.get("customer_code", "").strip().upper()
+        description = request.form.get("description", "").strip()
+        weight = request.form.get("weight", "").strip()
+        port = request.form.get("port", "").strip()
+        address_id = request.form.get("address_id", "").strip()
+        if not customer_code:
+            flash("กรุณาเลือกลูกค้า", "error")
+            return redirect(url_for("admin_shipment_create"))
+        customer = get_customer_by_code(customer_code)
+        if not customer:
+            flash("ไม่พบรหัสลูกค้า", "error")
+            return redirect(url_for("admin_shipment_create"))
+        dest_id = int(address_id) if address_id else None
+        tracking = add_shipment(customer_code, description, weight, port, dest_id)
+        flash(f"สร้าง Shipment สำเร็จ — Tracking: {tracking}", "success")
+        return redirect(url_for("admin_shipments"))
+    customers = get_all_customers()
+    return render_template("admin_shipment_create.html", customers=customers,
+                           PORTS=PORTS, active_tab="shipments")
 
 
 # ============================================================

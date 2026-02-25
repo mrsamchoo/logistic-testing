@@ -21,7 +21,9 @@
                 {% else %}
                     <a href="/customer" class="text-yellow-100 hover:text-white transition-colors">เข้าสู่ระบบ</a>
                 {% endif %}
-                <a href="/admin" class="text-yellow-100 hover:text-white transition-colors">Admin</a>
+                {% if session.get('admin_id') %}
+                    <a href="/admin" class="text-yellow-100 hover:text-white transition-colors">&#x1f6e1;&#xfe0f; Admin</a>
+                {% endif %}
             </div>
         </div>
     </nav>

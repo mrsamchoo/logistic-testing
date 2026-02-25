@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Admin — เพิ่มลูกค้าใหม่{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+        <a href="/admin" class="text-gray-400 hover:text-gray-600">&larr; กลับ</a>
+        <h1 class="text-2xl font-bold text-gray-800">&#x2795; เพิ่มลูกค้าใหม่</h1>
+        {% if admin_role == 'super_admin' %}
+            <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">Super Admin</span>
+        {% else %}
+            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">Admin</span>
+        {% endif %}
+    </div>
+    <a href="/admin/logout" class="text-sm text-gray-500 hover:text-red-500">ออกจากระบบ</a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm p-6">
+    <form method="POST" action="/admin/customer/add">
+        <!-- Location Type -->
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">&#x1f30f; ประเภทลูกค้า</h2>
+            <div class="flex gap-4">
+                <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="location_type" value="us" class="peer hidden" onchange="toggleSender()">
+                    <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 border-gray-200 rounded-xl p-4 text-center transition-all hover:border-blue-300">
+                        <div class="text-3xl mb-1">&#x1f1fa;&#x1f1f8;</div>
+                        <div class="font-semibold text-gray-700">อยู่อเมริกา (US)</div>
+                        <div class="text-xs text-gray-400 mt-1">ส่งพัสดุจาก US ไป TH</div>
+                    </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="location_type" value="th" class="peer hidden" onchange="toggleSender()">
+                    <div class="peer-checked:border-green-500 peer-checked:bg-green-50 border-2 border-gray-200 rounded-xl p-4 text-center transition-all hover:border-green-300">
+                        <div class="text-3xl mb-1">&#x1f1f9;&#x1f1ed;</div>
+                        <div class="font-semibold text-gray-700">อยู่ไทย (TH)</div>
+                        <div class="text-xs text-gray-400 mt-1">สั่งของจาก US ส่งมา TH</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- US City (conditional) -->
+        <div id="city-section" class="mb-6 hidden">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">&#x1f3d9;&#xfe0f; เมืองที่อยู่ (US)</h2>
+            <select name="city" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                <option value="">-- เลือกเมือง --</option>
+                {% for key, label in US_CITIES.items() %}
+                    <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Sender Info (US only) -->
+        <div id="sender-section" class="mb-6 hidden">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">&#x1f4e4; ข้อมูลผู้ส่ง (US)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ (English)</label>
+                    <input type="text" name="sender_first_name" placeholder="First Name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล (English)</label>
+                    <input type="text" name="sender_last_name" placeholder="Last Name"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ผู้ส่ง</label>
+                    <input type="text" name="sender_address" placeholder="123 Main St, City, State ZIP"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร (US)</label>
+                    <input type="text" name="sender_phone" placeholder="+1 xxx-xxx-xxxx"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Email & Password -->
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">&#x1f512; บัญชีผู้ใช้</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                    <input type="email" name="email" required placeholder="email@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                    <input type="text" name="password" required placeholder="รหัสผ่านชั่วคราว"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Destination Address -->
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">&#x1f4cd; ที่อยู่ปลายทาง (ไทย)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อที่อยู่ (ตั้งชื่อเอง)</label>
+                    <input type="text" name="addr_nickname" placeholder="เช่น บ้าน, ที่ทำงาน, หอพัก"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้รับ</label>
+                    <input type="text" name="addr_first_name" required placeholder="ชื่อจริง"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุลผู้รับ</label>
+                    <input type="text" name="addr_last_name" required placeholder="นามสกุล"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                    <textarea name="addr_address" required rows="2" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรผู้รับ</label>
+                    <input type="text" name="addr_phone" required placeholder="08x-xxx-xxxx"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit" class="px-8 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-bold text-lg">
+                &#x2713; สร้างลูกค้าใหม่
+            </button>
+            <a href="/admin" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-lg">
+                ยกเลิก
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleSender() {
+    const locationType = document.querySelector('input[name="location_type"]:checked');
+    const senderSection = document.getElementById('sender-section');
+    const citySection = document.getElementById('city-section');
+    if (locationType && locationType.value === 'us') {
+        senderSection.classList.remove('hidden');
+        citySection.classList.remove('hidden');
+    } else {
+        senderSection.classList.add('hidden');
+        citySection.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}
