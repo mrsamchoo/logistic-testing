@@ -6,87 +6,182 @@
     <div class="bg-white rounded-2xl shadow-md p-8">
         <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">&#x1f4dd; สมัครสมาชิก</h1>
 
-        <form method="POST" action="/register" class="space-y-8">
-            <!-- Account Info -->
+        <form method="POST" action="/register" class="space-y-8" id="register-form">
+
+            <!-- Step 1: Location Type -->
             <div>
-                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f512; ข้อมูลบัญชี</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
-                        <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="your@email.com">
-                        <p class="text-xs text-gray-400 mt-1">ใช้สำหรับกู้รหัสผ่าน กรณีลืม</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
-                            <input type="password" name="password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="อย่างน้อย 6 ตัวอักษร">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
-                            <input type="password" name="confirm_password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="กรอกรหัสผ่านอีกครั้ง">
-                        </div>
-                    </div>
+                <h2 class="text-lg font-semibold text-amber-600 mb-4">&#x1f30f; คุณอยู่ที่ไหน?</h2>
+                <input type="hidden" name="location_type" id="location_type" value="">
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" onclick="selectLocation('us')" id="btn-us"
+                        class="p-5 rounded-xl border-2 border-gray-200 text-center hover:border-amber-400 transition-colors">
+                        <div class="text-3xl mb-2">&#x1f1fa;&#x1f1f8;</div>
+                        <div class="font-semibold text-gray-700">อยู่อเมริกา (US)</div>
+                        <div class="text-xs text-gray-400 mt-1">LA, Portland, Las Vegas</div>
+                    </button>
+                    <button type="button" onclick="selectLocation('th')" id="btn-th"
+                        class="p-5 rounded-xl border-2 border-gray-200 text-center hover:border-amber-400 transition-colors">
+                        <div class="text-3xl mb-2">&#x1f1f9;&#x1f1ed;</div>
+                        <div class="font-semibold text-gray-700">อยู่ไทย (TH)</div>
+                        <div class="text-xs text-gray-400 mt-1">สั่งของจาก US มาไทย</div>
+                    </button>
                 </div>
             </div>
 
-            <hr class="border-gray-200">
-
-            <!-- Sender Info -->
-            <div>
-                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f1fa;&#x1f1f8; ที่อยู่ผู้ส่ง (อเมริกา)</h2>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
-                            <input type="text" name="sender_first_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="First Name">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
-                            <input type="text" name="sender_last_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="Last Name">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
-                        <textarea name="sender_address" required rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="123 Main St, City, State, ZIP"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
-                        <input type="tel" name="sender_phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
-                    </div>
-                </div>
+            <!-- Step 2: City (US only) -->
+            <div id="city-section" class="hidden">
+                <h2 class="text-lg font-semibold text-amber-600 mb-4">&#x1f3d9;&#xfe0f; เมืองที่คุณอยู่</h2>
+                <select name="city" id="city-select"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                    <option value="">-- เลือกเมือง --</option>
+                    {% for key, label in US_CITIES.items() %}
+                    <option value="{{ key }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
-            <hr class="border-gray-200">
-
-            <!-- Receiver Info -->
-            <div>
-                <h2 class="text-lg font-semibold text-amber-600 mb-4 flex items-center gap-2">&#x1f1f9;&#x1f1ed; ที่อยู่ปลายทาง (ไทย)</h2>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+            <!-- Step 3: Account Info -->
+            <div id="form-sections" class="hidden space-y-8">
+                <div>
+                    <h2 class="text-lg font-semibold text-amber-600 mb-4">&#x1f512; ข้อมูลบัญชี</h2>
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
-                            <input type="text" name="receiver_first_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อผู้รับ">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                            <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="your@email.com">
+                            <p class="text-xs text-gray-400 mt-1">ใช้สำหรับกู้รหัสผ่าน กรณีลืม</p>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
-                            <input type="text" name="receiver_last_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="นามสกุลผู้รับ">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                                <input type="password" name="password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="อย่างน้อย 6 ตัวอักษร">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
+                                <input type="password" name="confirm_password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="กรอกรหัสผ่านอีกครั้ง">
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
-                        <textarea name="receiver_address" required rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="123/4 ถ.สุขุมวิท แขวง... เขต... กรุงเทพฯ 10110"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
-                        <input type="tel" name="receiver_phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="081-234-5678">
                     </div>
                 </div>
-            </div>
 
-            <button type="submit" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-lg">ลงทะเบียน</button>
+                <hr class="border-gray-200">
+
+                <!-- Step 4: Sender Info (US only) -->
+                <div id="sender-section" class="hidden">
+                    <h2 class="text-lg font-semibold text-amber-600 mb-4">&#x1f1fa;&#x1f1f8; ที่อยู่ผู้ส่ง (อเมริกา)</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                                <input type="text" name="sender_first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="First Name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                                <input type="text" name="sender_last_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="Last Name">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                            <textarea name="sender_address" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="123 Main St, City, State, ZIP"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+                            <input type="tel" name="sender_phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="+1 (555) 123-4567">
+                        </div>
+                    </div>
+                    <hr class="border-gray-200 mt-8">
+                </div>
+
+                <!-- Step 5: Destination Addresses -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-amber-600">&#x1f1f9;&#x1f1ed; ที่อยู่ปลายทาง (ไทย)</h2>
+                        <span class="text-xs text-gray-400">เพิ่มได้สูงสุด 3 รายการ (เพิ่มเติมได้ภายหลัง)</span>
+                    </div>
+
+                    <div id="address-list">
+                        <!-- Address 1 (required) -->
+                        <div class="border border-gray-200 rounded-xl p-4 mb-4" id="addr-block-1">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-bold text-gray-600">ที่อยู่ที่ 1</span>
+                                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">จำเป็น</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">ชื่อเรียกสั้นๆ (เช่น "บ้านห้วยขวาง")</label>
+                                    <input type="text" name="addr_nickname_1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อเรียก (ไม่บังคับ)">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input type="text" name="addr_first_name_1" required class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อผู้รับ">
+                                    <input type="text" name="addr_last_name_1" required class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="นามสกุลผู้รับ">
+                                </div>
+                                <textarea name="addr_address_1" required rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ที่อยู่ผู้รับในไทย"></textarea>
+                                <input type="tel" name="addr_phone_1" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="เบอร์โทรผู้รับ เช่น 081-234-5678">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="addAddressBlock()" id="add-addr-btn"
+                        class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-amber-400 hover:text-amber-600 transition-colors text-sm font-medium">
+                        + เพิ่มที่อยู่ปลายทาง
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-lg">ลงทะเบียน</button>
+            </div>
         </form>
 
         <p class="text-center text-sm text-gray-400 mt-4">มีบัญชีอยู่แล้ว? <a href="/customer" class="text-amber-600 hover:underline">เข้าสู่ระบบ</a></p>
     </div>
 </div>
+
+<script>
+let addressCount = 1;
+
+function selectLocation(type) {
+    document.getElementById('location_type').value = type;
+    document.getElementById('btn-us').className = 'p-5 rounded-xl border-2 text-center transition-colors ' +
+        (type === 'us' ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-amber-400');
+    document.getElementById('btn-th').className = 'p-5 rounded-xl border-2 text-center transition-colors ' +
+        (type === 'th' ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-amber-400');
+
+    document.getElementById('city-section').classList.toggle('hidden', type !== 'us');
+    document.getElementById('sender-section').classList.toggle('hidden', type !== 'us');
+    document.getElementById('form-sections').classList.remove('hidden');
+
+    // Toggle required for sender fields
+    ['sender_first_name','sender_last_name','sender_address','sender_phone'].forEach(n => {
+        const el = document.querySelector('[name="'+n+'"]');
+        if (el) el.required = (type === 'us');
+    });
+}
+
+function addAddressBlock() {
+    if (addressCount >= 3) return;
+    addressCount++;
+    const html = `
+    <div class="border border-gray-200 rounded-xl p-4 mb-4" id="addr-block-${addressCount}">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-bold text-gray-600">ที่อยู่ที่ ${addressCount}</span>
+            <button type="button" onclick="removeAddressBlock(${addressCount})" class="text-xs text-red-400 hover:text-red-600">&#x2715; ลบ</button>
+        </div>
+        <div class="space-y-3">
+            <input type="text" name="addr_nickname_${addressCount}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อเรียกสั้นๆ (ไม่บังคับ)">
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" name="addr_first_name_${addressCount}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ชื่อผู้รับ">
+                <input type="text" name="addr_last_name_${addressCount}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="นามสกุลผู้รับ">
+            </div>
+            <textarea name="addr_address_${addressCount}" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="ที่อยู่ผู้รับในไทย"></textarea>
+            <input type="tel" name="addr_phone_${addressCount}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="เบอร์โทรผู้รับ">
+        </div>
+    </div>`;
+    document.getElementById('address-list').insertAdjacentHTML('beforeend', html);
+    if (addressCount >= 3) document.getElementById('add-addr-btn').classList.add('hidden');
+}
+
+function removeAddressBlock(idx) {
+    document.getElementById('addr-block-' + idx).remove();
+    addressCount--;
+    document.getElementById('add-addr-btn').classList.remove('hidden');
+}
+</script>
 {% endblock %}

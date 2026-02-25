@@ -8,7 +8,6 @@
         <p class="text-gray-500">คำนวณค่าขนส่งจาก US มาไทย ตามน้ำหนักและระดับสมาชิก</p>
     </div>
 
-    <!-- Current Rate Display -->
     {% if customer and customer_rate %}
     <!-- === Logged-in customer: Show only their rate === -->
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
@@ -35,7 +34,7 @@
         </div>
     </div>
 
-    <!-- Calculator for logged-in customer -->
+    <!-- Calculator -->
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
         <h2 class="text-lg font-bold text-gray-800 mb-4">&#x1f9ee; คำนวณราคา</h2>
         <div class="space-y-4">
@@ -50,13 +49,11 @@
                 <span class="text-lg font-bold text-amber-700">{{ customer_rate }} &#xe3f;/kg</span>
             </div>
             <input type="hidden" id="customer-rate" value="{{ customer_rate }}">
-
             <button onclick="calculate()" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-lg">
                 &#x1f4b0; คำนวณ
             </button>
         </div>
 
-        <!-- Result -->
         <div id="result" class="hidden mt-6">
             <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
                 <div class="text-gray-500 text-sm mb-1">ค่าขนส่งโดยประมาณ</div>
@@ -74,79 +71,14 @@
     </div>
 
     {% else %}
-    <!-- === Not logged in: Show all tier rates === -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">&#x1f4cb; ตารางอัตราค่าขนส่ง</h2>
-        <div class="grid grid-cols-3 gap-4">
-            {% for tier_key, tier_data in rates.tiers.items() %}
-            <div class="text-center p-4 rounded-xl border-2 border-gray-100 bg-gray-50">
-                {% if tier_key == 'vip' %}
-                    <div class="text-2xl mb-1">&#x1f451;</div>
-                    <div class="font-bold text-yellow-600">VIP</div>
-                {% elif tier_key == 'gold' %}
-                    <div class="text-2xl mb-1">&#x1f947;</div>
-                    <div class="font-bold text-yellow-700">Gold</div>
-                {% else %}
-                    <div class="text-2xl mb-1">&#x1f949;</div>
-                    <div class="font-bold text-orange-700">Bronze</div>
-                {% endif %}
-                <div class="text-2xl font-bold text-gray-800 mt-2">{{ tier_data.rate }}</div>
-                <div class="text-xs text-gray-400">&#xe3f;/kg</div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Calculator for guests -->
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">&#x1f9ee; คำนวณราคา</h2>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">น้ำหนัก (kg)</label>
-                <input type="number" id="weight-input" step="0.1" min="0.1" placeholder="กรอกน้ำหนัก เช่น 5.5"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
-                <p class="text-xs text-amber-600 mt-1">* น้ำหนักขั้นต่ำ 1 kg (ต่ำกว่า 1 kg คิดเป็น 1 kg)</p>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ระดับสมาชิก</label>
-                <select id="tier-select"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
-                    {% for tier_key, tier_data in rates.tiers.items() %}
-                    <option value="{{ tier_data.rate }}">
-                        {{ tier_data.label }} — {{ tier_data.rate }} &#xe3f;/kg
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <button onclick="calculate()" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-lg">
-                &#x1f4b0; คำนวณ
-            </button>
-        </div>
-
-        <!-- Result -->
-        <div id="result" class="hidden mt-6">
-            <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
-                <div class="text-gray-500 text-sm mb-1">ค่าขนส่งโดยประมาณ</div>
-                <div class="text-4xl font-bold text-amber-600" id="result-price">0</div>
-                <div class="text-gray-400 text-sm mt-1">บาท (THB)</div>
-                <div class="mt-3 text-xs text-gray-400">
-                    <span id="result-weight">0</span> kg × <span id="result-rate">0</span> &#xe3f;/kg
-                </div>
-                <div id="min-weight-note" class="hidden mt-2 text-xs text-amber-600 font-medium">
-                    (น้ำหนักจริง <span id="actual-weight">0</span> kg — คิดขั้นต่ำ 1 kg)
-                </div>
-            </div>
-            <p class="text-xs text-gray-400 text-center mt-3">* ราคานี้เป็นการประมาณเบื้องต้น อาจเปลี่ยนแปลงตามขนาดและประเภทสินค้า</p>
-        </div>
-    </div>
-
-    <!-- Login prompt -->
-    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 text-center mb-6">
-        <p class="text-amber-700 font-medium mb-2">&#x1f513; เข้าสู่ระบบเพื่อดูเรทส่วนตัวของคุณ</p>
+    <!-- === Not logged in: Login prompt only === -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 text-center mb-6">
+        <div class="text-5xl mb-4">&#x1f512;</div>
+        <h2 class="text-xl font-bold text-gray-800 mb-3">กรุณาเข้าสู่ระบบเพื่อดูอัตราค่าขนส่ง</h2>
+        <p class="text-gray-500 mb-6">เข้าสู่ระบบด้วยรหัสลูกค้าเพื่อดูเรทส่วนตัวและคำนวณราคาค่าขนส่ง</p>
         <div class="flex gap-3 justify-center">
-            <a href="/customer" class="px-5 py-2 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-sm">เข้าสู่ระบบ</a>
-            <a href="/register" class="px-5 py-2 bg-white border border-yellow-400 text-yellow-700 rounded-lg font-semibold hover:bg-yellow-50 transition-colors text-sm">สมัครสมาชิก</a>
+            <a href="/customer" class="px-6 py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors">เข้าสู่ระบบ</a>
+            <a href="/register" class="px-6 py-3 bg-white border border-yellow-400 text-yellow-700 rounded-lg font-semibold hover:bg-yellow-50 transition-colors">สมัครสมาชิก</a>
         </div>
     </div>
     {% endif %}
@@ -166,42 +98,18 @@
 <script>
 function calculate() {
     const rawWeight = parseFloat(document.getElementById('weight-input').value);
-    let rate;
-
-    // Check if customer is logged in (hidden input exists)
-    const customerRateEl = document.getElementById('customer-rate');
-    if (customerRateEl) {
-        rate = parseFloat(customerRateEl.value);
-    } else {
-        rate = parseFloat(document.getElementById('tier-select').value);
-    }
-
-    if (!rawWeight || rawWeight <= 0) {
-        alert('กรุณากรอกน้ำหนัก');
-        return;
-    }
-
-    // Minimum 1 kg rule: weight below 1 kg is charged as 1 kg
+    const rate = parseFloat(document.getElementById('customer-rate').value);
+    if (!rawWeight || rawWeight <= 0) { alert('กรุณากรอกน้ำหนัก'); return; }
     const weight = Math.max(1, rawWeight);
-
     const total = (weight * rate).toFixed(2);
     document.getElementById('result-price').textContent = Number(total).toLocaleString('th-TH', {minimumFractionDigits: 2});
     document.getElementById('result-weight').textContent = weight;
     document.getElementById('result-rate').textContent = rate;
     document.getElementById('result').classList.remove('hidden');
-
-    // Show note if min weight rule was applied
     const minNote = document.getElementById('min-weight-note');
-    if (rawWeight < 1) {
-        document.getElementById('actual-weight').textContent = rawWeight;
-        minNote.classList.remove('hidden');
-    } else {
-        minNote.classList.add('hidden');
-    }
+    if (rawWeight < 1) { document.getElementById('actual-weight').textContent = rawWeight; minNote.classList.remove('hidden'); }
+    else { minNote.classList.add('hidden'); }
 }
-
-document.getElementById('weight-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') calculate();
-});
+document.getElementById('weight-input')?.addEventListener('keypress', function(e) { if (e.key === 'Enter') calculate(); });
 </script>
 {% endblock %}

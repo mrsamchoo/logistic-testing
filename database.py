@@ -24,6 +24,32 @@ PORTS = ["LAX", "SEA", "JFK", "MIA"]
 
 TIERS = ["bronze", "gold", "vip"]
 
+LOCATION_TYPES = {"us": "อเมริกา", "th": "ไทย"}
+
+US_CITIES = {
+    "los_angeles": "Los Angeles",
+    "portland": "Portland",
+    "las_vegas": "Las Vegas",
+}
+
+MAX_ADDRESSES = 15
+
+INBOUND_CARRIERS = {
+    "amazon": "Amazon",
+    "fedex": "FedEx",
+    "usps": "USPS",
+    "ups": "UPS",
+    "dhl": "DHL",
+    "other": "อื่นๆ",
+}
+
+INBOUND_STATUS_MAP = {
+    "pending": "รอรับเข้า",
+    "in_transit": "กำลังมา",
+    "received": "ถึง Warehouse แล้ว",
+    "processing": "กำลังดำเนินการ",
+}
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -100,6 +126,21 @@ def init_db():
     """)
 
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS customer_addresses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL,
+            nickname TEXT NOT NULL DEFAULT '',
+            receiver_first_name TEXT NOT NULL,
+            receiver_last_name TEXT NOT NULL,
+            receiver_address TEXT NOT NULL,
+            receiver_phone TEXT NOT NULL,
+            is_default INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (customer_id) REFERENCES customers(id)
+        )
+    """)
+
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS rate_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER NOT NULL,
@@ -115,11 +156,27 @@ def init_db():
         )
     """)
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS inbound_packages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_code TEXT NOT NULL,
+            carrier TEXT NOT NULL DEFAULT 'other',
+            carrier_tracking_number TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'pending',
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            received_at TIMESTAMP DEFAULT NULL,
+            notes TEXT DEFAULT '',
+            FOREIGN KEY (customer_code) REFERENCES customers(customer_code)
+        )
+    """)
+
     # --- Migrations ---
     cust_columns = [row[1] for row in conn.execute("PRAGMA table_info(customers)").fetchall()]
     for col, default in [("sea_code", "''"), ("tier", "'bronze'"), ("custom_rate", "NULL"),
                          ("email", "''"), ("password_hash", "''"),
-                         ("reset_token", "NULL"), ("reset_token_expiry", "NULL")]:
+                         ("reset_token", "NULL"), ("reset_token_expiry", "NULL"),
+                         ("location_type", "'th'"), ("city", "''")]:
         if col not in cust_columns:
             conn.execute(f"ALTER TABLE customers ADD COLUMN {col} TEXT DEFAULT {default}")
 
@@ -128,6 +185,25 @@ def init_db():
         conn.execute("ALTER TABLE shipments ADD COLUMN port TEXT DEFAULT ''")
     if "photos" not in ship_columns:
         conn.execute("ALTER TABLE shipments ADD COLUMN photos TEXT DEFAULT ''")
+    if "destination_address_id" not in ship_columns:
+        conn.execute("ALTER TABLE shipments ADD COLUMN destination_address_id INTEGER DEFAULT NULL")
+    if "address_locked_by_customer" not in ship_columns:
+        conn.execute("ALTER TABLE shipments ADD COLUMN address_locked_by_customer INTEGER DEFAULT 0")
+
+    # Migrate existing receiver data to customer_addresses table (one-time)
+    existing_addr_count = conn.execute("SELECT COUNT(*) FROM customer_addresses").fetchone()[0]
+    if existing_addr_count == 0:
+        customers_with_receivers = conn.execute(
+            "SELECT id, receiver_first_name, receiver_last_name, receiver_address, receiver_phone FROM customers WHERE receiver_first_name != ''"
+        ).fetchall()
+        for c in customers_with_receivers:
+            conn.execute(
+                """INSERT INTO customer_addresses
+                   (customer_id, nickname, receiver_first_name, receiver_last_name, receiver_address, receiver_phone, is_default)
+                   VALUES (?, ?, ?, ?, ?, ?, 1)""",
+                (c["id"], "ที่อยู่หลัก", c["receiver_first_name"], c["receiver_last_name"],
+                 c["receiver_address"], c["receiver_phone"]),
+            )
 
     existing_admin = conn.execute("SELECT 1 FROM admins WHERE username = 'admin'").fetchone()
     if not existing_admin:
@@ -319,9 +395,11 @@ def generate_tracking_number():
 # ============================================================
 
 
-def add_customer(sender_first_name, sender_last_name, sender_address, sender_phone,
-                 receiver_first_name, receiver_last_name, receiver_address, receiver_phone,
+def add_customer(location_type="th", city="",
+                 sender_first_name="", sender_last_name="",
+                 sender_address="", sender_phone="",
                  email="", password=""):
+    """Create customer. Returns (success, code_or_error, customer_id)."""
     air_code = generate_customer_code()
     sea_code = generate_sea_code()
     pw_hash = generate_password_hash(password) if password else ""
@@ -329,18 +407,18 @@ def add_customer(sender_first_name, sender_last_name, sender_address, sender_pho
     try:
         conn.execute(
             """INSERT INTO customers
-               (customer_code, sea_code, email, password_hash, tier,
+               (customer_code, sea_code, email, password_hash, tier, location_type, city,
                 sender_first_name, sender_last_name, sender_address, sender_phone,
                 receiver_first_name, receiver_last_name, receiver_address, receiver_phone)
-               VALUES (?, ?, ?, ?, 'bronze', ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (air_code, sea_code, email, pw_hash,
-             sender_first_name, sender_last_name, sender_address, sender_phone,
-             receiver_first_name, receiver_last_name, receiver_address, receiver_phone),
+               VALUES (?, ?, ?, ?, 'bronze', ?, ?, ?, ?, ?, ?, '', '', '', '')""",
+            (air_code, sea_code, email, pw_hash, location_type, city,
+             sender_first_name, sender_last_name, sender_address, sender_phone),
         )
+        customer_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.commit()
-        return True, air_code
+        return True, air_code, customer_id
     except sqlite3.IntegrityError:
-        return False, "เกิดข้อผิดพลาด กรุณาลองใหม่"
+        return False, "เกิดข้อผิดพลาด กรุณาลองใหม่", None
     finally:
         conn.close()
 
@@ -462,7 +540,12 @@ def add_shipment(customer_code, description="", weight=""):
 def get_shipments_by_customer(customer_code, limit=5):
     conn = get_db()
     shipments = conn.execute(
-        "SELECT * FROM shipments WHERE customer_code = ? ORDER BY created_at DESC LIMIT ?",
+        """SELECT s.*,
+                  ca.nickname AS dest_nickname, ca.receiver_first_name AS dest_first_name,
+                  ca.receiver_last_name AS dest_last_name
+           FROM shipments s
+           LEFT JOIN customer_addresses ca ON s.destination_address_id = ca.id
+           WHERE s.customer_code = ? ORDER BY s.created_at DESC LIMIT ?""",
         (customer_code, limit),
     ).fetchall()
     conn.close()
@@ -473,9 +556,13 @@ def get_shipment_by_tracking(tracking_number):
     conn = get_db()
     shipment = conn.execute(
         """SELECT s.*, c.sender_first_name, c.sender_last_name,
-                  c.receiver_first_name, c.receiver_last_name
+                  c.location_type, c.city,
+                  ca.nickname AS dest_nickname,
+                  ca.receiver_first_name, ca.receiver_last_name,
+                  ca.receiver_address AS dest_address, ca.receiver_phone AS dest_phone
            FROM shipments s
            JOIN customers c ON s.customer_code = c.customer_code
+           LEFT JOIN customer_addresses ca ON s.destination_address_id = ca.id
            WHERE s.tracking_number = ?""",
         (tracking_number,),
     ).fetchone()
@@ -486,9 +573,12 @@ def get_shipment_by_tracking(tracking_number):
 def get_all_shipments(search=None, status_filter=None):
     conn = get_db()
     query = """SELECT s.*, c.sender_first_name, c.sender_last_name,
-                      c.receiver_first_name, c.receiver_last_name
+                      c.location_type, c.city,
+                      ca.nickname AS dest_nickname,
+                      ca.receiver_first_name, ca.receiver_last_name
                FROM shipments s
                JOIN customers c ON s.customer_code = c.customer_code
+               LEFT JOIN customer_addresses ca ON s.destination_address_id = ca.id
                WHERE 1=1"""
     params = []
     if status_filter and status_filter != "all":
@@ -528,6 +618,180 @@ def bulk_update_shipment_status(shipment_ids, new_status):
 
 
 # ============================================================
+# Customer Address Operations
+# ============================================================
+
+
+def add_customer_address(customer_id, nickname, receiver_first_name, receiver_last_name,
+                         receiver_address, receiver_phone, is_default=0):
+    conn = get_db()
+    if is_default:
+        conn.execute("UPDATE customer_addresses SET is_default = 0 WHERE customer_id = ?", (customer_id,))
+    cursor = conn.execute(
+        """INSERT INTO customer_addresses
+           (customer_id, nickname, receiver_first_name, receiver_last_name, receiver_address, receiver_phone, is_default)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (customer_id, nickname, receiver_first_name, receiver_last_name,
+         receiver_address, receiver_phone, is_default),
+    )
+    address_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return address_id
+
+
+def get_customer_addresses(customer_id):
+    conn = get_db()
+    addresses = conn.execute(
+        "SELECT * FROM customer_addresses WHERE customer_id = ? ORDER BY is_default DESC, created_at ASC",
+        (customer_id,),
+    ).fetchall()
+    conn.close()
+    return addresses
+
+
+def get_address_by_id(address_id):
+    conn = get_db()
+    address = conn.execute("SELECT * FROM customer_addresses WHERE id = ?", (address_id,)).fetchone()
+    conn.close()
+    return address
+
+
+def update_customer_address(address_id, nickname, receiver_first_name, receiver_last_name,
+                            receiver_address, receiver_phone):
+    conn = get_db()
+    conn.execute(
+        """UPDATE customer_addresses
+           SET nickname = ?, receiver_first_name = ?, receiver_last_name = ?,
+               receiver_address = ?, receiver_phone = ?
+           WHERE id = ?""",
+        (nickname, receiver_first_name, receiver_last_name, receiver_address, receiver_phone, address_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_customer_address(address_id):
+    conn = get_db()
+    conn.execute("DELETE FROM customer_addresses WHERE id = ?", (address_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_address_count(customer_id):
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) FROM customer_addresses WHERE customer_id = ?", (customer_id,)).fetchone()[0]
+    conn.close()
+    return count
+
+
+def set_shipment_destination(shipment_id, address_id, locked_by_customer=False):
+    conn = get_db()
+    if locked_by_customer:
+        conn.execute(
+            "UPDATE shipments SET destination_address_id = ?, address_locked_by_customer = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (address_id, shipment_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE shipments SET destination_address_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (address_id, shipment_id),
+        )
+    conn.commit()
+    conn.close()
+
+
+def admin_set_shipment_destination(shipment_id, address_id):
+    conn = get_db()
+    conn.execute(
+        "UPDATE shipments SET destination_address_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (address_id, shipment_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+# ============================================================
+# Inbound Package Operations
+# ============================================================
+
+
+def add_inbound_package(customer_code, carrier, carrier_tracking_number, description=""):
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO inbound_packages
+           (customer_code, carrier, carrier_tracking_number, description)
+           VALUES (?, ?, ?, ?)""",
+        (customer_code, carrier, carrier_tracking_number, description),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_inbound_by_customer(customer_code, limit=20):
+    conn = get_db()
+    packages = conn.execute(
+        "SELECT * FROM inbound_packages WHERE customer_code = ? ORDER BY submitted_at DESC LIMIT ?",
+        (customer_code, limit),
+    ).fetchall()
+    conn.close()
+    return packages
+
+
+def get_inbound_by_id(inbound_id):
+    conn = get_db()
+    package = conn.execute(
+        "SELECT * FROM inbound_packages WHERE id = ?", (inbound_id,)
+    ).fetchone()
+    conn.close()
+    return package
+
+
+def delete_inbound_package(inbound_id):
+    conn = get_db()
+    conn.execute("DELETE FROM inbound_packages WHERE id = ?", (inbound_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_all_inbound_packages(search=None, status_filter=None):
+    conn = get_db()
+    query = """SELECT ip.*, c.sender_first_name, c.sender_last_name,
+                      c.location_type, c.city
+               FROM inbound_packages ip
+               JOIN customers c ON ip.customer_code = c.customer_code
+               WHERE 1=1"""
+    params = []
+    if status_filter and status_filter != "all":
+        query += " AND ip.status = ?"
+        params.append(status_filter)
+    if search:
+        term = f"%{search}%"
+        query += " AND (ip.carrier_tracking_number LIKE ? OR ip.customer_code LIKE ? OR ip.description LIKE ?)"
+        params.extend([term, term, term])
+    query += " ORDER BY ip.submitted_at DESC"
+    packages = conn.execute(query, params).fetchall()
+    conn.close()
+    return packages
+
+
+def update_inbound_status(inbound_id, new_status, notes=""):
+    conn = get_db()
+    if new_status == "received":
+        conn.execute(
+            "UPDATE inbound_packages SET status = ?, received_at = CURRENT_TIMESTAMP, notes = ? WHERE id = ?",
+            (new_status, notes, inbound_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE inbound_packages SET status = ?, notes = ? WHERE id = ?",
+            (new_status, notes, inbound_id),
+        )
+    conn.commit()
+    conn.close()
+
+
+# ============================================================
 # Mock Data
 # ============================================================
 
@@ -557,6 +821,29 @@ def seed_mock_shipments(customer_code):
         )
     conn.commit()
     conn.close()
+
+
+def seed_mock_addresses(customer_id):
+    """Create 4 example destination addresses for a demo customer."""
+    addresses = [
+        ("Oak ห้วยขวาง", "โอ๊ค", "สมชาย", "123/4 ซอยประชาราษฎร์บำเพ็ญ แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพฯ 10310", "081-234-5678"),
+        ("แบร์9นิ้ว", "แบร์", "นินจา", "456 ถนนรัชดาภิเษก แขวงจตุจักร เขตจตุจักร กรุงเทพฯ 10900", "089-876-5432"),
+        ("บ้านเชียงใหม่", "สมหญิง", "ใจดี", "78/9 ถนนนิมมานเหมินท์ ต.สุเทพ อ.เมือง จ.เชียงใหม่ 50200", "062-345-6789"),
+        ("ออฟฟิศสีลม", "ณัฐ", "วงศ์ทอง", "88 อาคารสีลมคอมเพล็กซ์ ชั้น 15 ถนนสีลม แขวงสุริยวงศ์ เขตบางรัก กรุงเทพฯ 10500", "095-111-2222"),
+    ]
+    conn = get_db()
+    address_ids = []
+    for i, (nickname, fname, lname, addr, phone) in enumerate(addresses):
+        cursor = conn.execute(
+            """INSERT INTO customer_addresses
+               (customer_id, nickname, receiver_first_name, receiver_last_name, receiver_address, receiver_phone, is_default)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (customer_id, nickname, fname, lname, addr, phone, 1 if i == 0 else 0),
+        )
+        address_ids.append(cursor.lastrowid)
+    conn.commit()
+    conn.close()
+    return address_ids
 
 
 # ============================================================
