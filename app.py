@@ -1,3 +1,4 @@
+import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import (
@@ -14,7 +15,7 @@ from database import (
 )
 
 app = Flask(__name__)
-app.secret_key = "shipping-secret-key-change-in-production"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "shipping-secret-key-change-in-production")
 
 
 # ============================================================
@@ -478,8 +479,10 @@ def admin_manage_delete(admin_id):
 # ============================================================
 
 
+# Always init DB (needed for gunicorn in production)
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     print("=" * 50)
     print("  US-TH Shipping Tracker is running!")
     print("  Homepage:    http://localhost:8080/")
