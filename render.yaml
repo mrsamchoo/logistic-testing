@@ -10,14 +10,14 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
-      - key: NODE_VERSION
-        value: "20.11.0"
       - key: FLASK_SECRET_KEY
         generateValue: true
       - key: ENCRYPTION_KEY
         generateValue: true
       - key: DATA_DIR
         value: /var/data
+      - key: FLASK_DEBUG
+        value: "0"
     disk:
       name: app-data
       mountPath: /var/data
