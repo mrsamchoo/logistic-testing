@@ -7,8 +7,10 @@ import secrets
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "shipping.db")
-RATES_PATH = os.path.join(os.path.dirname(__file__), "config", "rates.json")
+# Use persistent disk path on Render, or local path for development
+_DATA_DIR = os.environ.get("DATA_DIR", os.path.dirname(__file__))
+DB_PATH = os.path.join(_DATA_DIR, "shipping.db")
+RATES_PATH = os.path.join(_DATA_DIR, "config", "rates.json")
 
 STATUS_MAP = {
     "pending": "รอรับพัสดุ",

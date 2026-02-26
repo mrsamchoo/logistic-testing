@@ -2,10 +2,23 @@ services:
   - type: web
     name: us-th-shipping
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    plan: starter
+    buildCommand: |
+      pip install -r requirements.txt
+      cd messaging-frontend && npm install && npm run build && cd ..
+    startCommand: gunicorn --worker-class eventlet -w 1 app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
+      - key: NODE_VERSION
+        value: "20.11.0"
       - key: FLASK_SECRET_KEY
         generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: app-data
+      mountPath: /var/data
+      sizeGB: 1

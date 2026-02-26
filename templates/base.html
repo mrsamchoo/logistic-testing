@@ -8,21 +8,24 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <nav class="bg-yellow-500 shadow-md">
+    <nav class="bg-slate-900 shadow-lg">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <a href="/" class="text-xl font-bold text-white flex items-center gap-2">&#x1f4e6; US-TH Shipping</a>
             <div class="flex gap-4 items-center text-sm">
-                <a href="/" class="text-yellow-100 hover:text-white transition-colors">&#x1f3e0; หน้าแรก</a>
-                <a href="/calculator" class="text-yellow-100 hover:text-white transition-colors">&#x1f4b0; คำนวณราคา</a>
-                <a href="/register" class="text-yellow-100 hover:text-white transition-colors">&#x1f4dd; สมัครสมาชิก</a>
-                {% if session.get('customer_code') %}
-                    <a href="/customer/{{ session.customer_code }}" class="font-semibold text-white bg-yellow-600 px-3 py-1 rounded-lg">{{ session.customer_code }}</a>
-                    <a href="/customer/logout" class="text-yellow-200 hover:text-red-200">ออก</a>
-                {% else %}
-                    <a href="/customer" class="text-yellow-100 hover:text-white transition-colors">เข้าสู่ระบบ</a>
+                <a href="/" class="text-slate-300 hover:text-white transition-colors">&#x1f3e0; หน้าแรก</a>
+                <a href="/calculator" class="text-slate-300 hover:text-white transition-colors">&#x1f4b0; คำนวณราคา</a>
+                {% if not session.get('admin_id') %}
+                    <a href="/register" class="text-slate-300 hover:text-white transition-colors">&#x1f4dd; สมัครสมาชิก</a>
                 {% endif %}
-                {% if session.get('admin_id') %}
-                    <a href="/admin" class="text-yellow-100 hover:text-white transition-colors">&#x1f6e1;&#xfe0f; Admin</a>
+                {% if session.get('customer_code') %}
+                    <a href="/customer/{{ session.customer_code }}" class="font-semibold text-white bg-blue-600 px-3 py-1 rounded-lg">{{ session.customer_code }}</a>
+                    <a href="/customer/logout" class="text-slate-400 hover:text-red-300">ออก</a>
+                {% elif not session.get('admin_id') %}
+                    <a href="/customer" class="text-slate-300 hover:text-white transition-colors">เข้าสู่ระบบ</a>
+                {% endif %}
+                {% if session.get('admin_id') and not session.get('customer_code') %}
+                    <a href="/admin" class="text-slate-300 hover:text-white transition-colors">&#x1f6e1;&#xfe0f; Admin</a>
+                    <a href="/admin/logout" class="text-slate-400 hover:text-red-300">ออกจากระบบ</a>
                 {% endif %}
             </div>
         </div>

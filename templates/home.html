@@ -2,17 +2,62 @@
 {% block title %}หน้าแรก — ระบบติดตามพัสดุ US-TH{% endblock %}
 
 {% block content %}
-<!-- Hero + Search -->
+<!-- Split Login Hero -->
+<div class="mb-10 rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 shadow-2xl">
+    <div class="relative px-6 py-12 md:py-16">
+        <!-- Background decorative elements -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-4 left-10 text-6xl">&#x2708;&#xFE0F;</div>
+            <div class="absolute top-8 right-20 text-5xl">&#x1F4E6;</div>
+            <div class="absolute bottom-6 left-1/4 text-4xl">&#x1F6A2;</div>
+            <div class="absolute bottom-10 right-10 text-5xl">&#x1F69A;</div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl opacity-50">&#x1F30F;</div>
+        </div>
+
+        <div class="relative z-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-white text-center mb-2">US-TH Shipping</h1>
+            <p class="text-blue-200 text-center mb-10 text-sm md:text-base">International Logistics &amp; Freight Forwarding</p>
+
+            <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <!-- Customer Portal -->
+                <a href="/customer" class="group block bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="w-16 h-16 bg-blue-500/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/50 transition-colors">
+                        <span class="text-3xl">&#x1F4E6;</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-white mb-2">Customer Portal</h2>
+                    <p class="text-blue-200 text-sm">ติดตามพัสดุ &bull; เช็คสถานะ &bull; ดูประวัติ</p>
+                    <div class="mt-4 inline-flex items-center gap-2 text-blue-300 group-hover:text-white text-sm font-medium">
+                        เข้าสู่ระบบลูกค้า <span class="group-hover:translate-x-1 transition-transform">&#x2192;</span>
+                    </div>
+                </a>
+
+                <!-- Admin Portal -->
+                <a href="/admin/login" class="group block bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="w-16 h-16 bg-indigo-500/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-indigo-500/50 transition-colors">
+                        <span class="text-3xl">&#x1F6E1;&#xFE0F;</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-white mb-2">Admin Portal</h2>
+                    <p class="text-blue-200 text-sm">จัดการพัสดุ &bull; ดูแลระบบ &bull; รายงาน</p>
+                    <div class="mt-4 inline-flex items-center gap-2 text-blue-300 group-hover:text-white text-sm font-medium">
+                        เข้าสู่ระบบผู้ดูแล <span class="group-hover:translate-x-1 transition-transform">&#x2192;</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
 <div class="text-center mb-10">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">&#x1f4e6; ระบบติดตามพัสดุ US-Thailand</h1>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">&#x1f50d; ติดตามพัสดุ</h2>
     <p class="text-gray-500 mb-6">ค้นหาสถานะพัสดุของคุณด้วยหมายเลขติดตาม</p>
 
     <form method="POST" action="/track" class="max-w-xl mx-auto flex gap-2">
         <input type="text" name="tracking_number" required
-            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="กรอกหมายเลขติดตาม เช่น TH20260224A001">
         <button type="submit"
-            class="px-6 py-3 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
             &#x1f50d; ค้นหา
         </button>
     </form>
@@ -20,13 +65,13 @@
 
 <!-- Image Carousel — Logistics -->
 <div class="mb-10">
-    <div class="relative overflow-hidden rounded-xl">
+    <div class="relative overflow-hidden rounded-xl shadow-lg">
         <div id="carousel" class="flex transition-transform duration-500 ease-in-out">
-            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1494412574643-ff11b0a5eb19?w=1200&h=400&fit=crop&crop=center" alt="Cargo Ship" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1494412651409-8963ce7935a7?w=1200&h=400&fit=crop&crop=center" alt="Container Ship" class="w-full h-64 object-cover rounded-xl"></div>
             <div class="min-w-full"><img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=1200&h=400&fit=crop&crop=center" alt="Warehouse" class="w-full h-64 object-cover rounded-xl"></div>
             <div class="min-w-full"><img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&h=400&fit=crop&crop=center" alt="Shipping Containers" class="w-full h-64 object-cover rounded-xl"></div>
             <div class="min-w-full"><img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&h=400&fit=crop&crop=center" alt="Container Port" class="w-full h-64 object-cover rounded-xl"></div>
-            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=1200&h=400&fit=crop&crop=center" alt="Air Cargo" class="w-full h-64 object-cover rounded-xl"></div>
+            <div class="min-w-full"><img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=1200&h=400&fit=crop&crop=center" alt="Air Cargo Plane" class="w-full h-64 object-cover rounded-xl"></div>
             <div class="min-w-full"><img src="https://images.unsplash.com/photo-1473042904451-00171c69419d?w=1200&h=400&fit=crop&crop=center" alt="Delivery Truck" class="w-full h-64 object-cover rounded-xl"></div>
         </div>
         <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white text-lg">&#x276E;</button>
@@ -43,12 +88,12 @@
             <div id="reviewCarousel" class="flex transition-transform duration-500 ease-in-out">
                 <!-- 1 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">K</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">K</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณกัญญา</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"บริการดีมาก ส่งของจาก US มาถึงไทยไม่เกิน 7 วันทำการ แพ็คของดี ไม่เสียหาย แนะนำเลยค่ะ"</p>
@@ -56,12 +101,12 @@
                 </div>
                 <!-- 2 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">P</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">P</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณประเสริฐ</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ใช้บริการมา 3 ปี ส่งของทางอากาศมาตลอด ราคาดี เชื่อถือได้ ทีมงานตอบไว้มากครับ"</p>
@@ -69,12 +114,12 @@
                 </div>
                 <!-- 3 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">S</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">S</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณสมศรี</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"สะดวกมากค่ะ สั่งของจาก Amazon แล้วส่งมาที่ warehouse ง่ายมาก ติดตามสถานะได้ตลอด 24 ชม."</p>
@@ -82,12 +127,12 @@
                 </div>
                 <!-- 4 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">W</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">W</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณวิชัย</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ส่งอะไหล่รถจาก eBay มาไทย ของถึงเร็วมากครับ แพ็คอย่างดี ไม่บุบไม่เสียหาย ประทับใจมาก"</p>
@@ -95,12 +140,12 @@
                 </div>
                 <!-- 5 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">N</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">N</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณนภา</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ราคาดีกว่าที่อื่นเยอะเลยค่ะ ส่งกระเป๋า 3 ใบจาก outlet ที่อเมริกา มาถึงปลอดภัยทุกใบ"</p>
@@ -108,12 +153,12 @@
                 </div>
                 <!-- 6 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">T</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">T</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณธนพล</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ส่งทาง Air freight ของถึงไวมาก ระบบ tracking ดีมาก รู้ตลอดว่าของอยู่ไหน อัพเดทสถานะตลอด"</p>
@@ -121,12 +166,12 @@
                 </div>
                 <!-- 7 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">A</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">A</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณอรุณี</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"เปิดร้านออนไลน์ขายของนำเข้า ใช้บริการส่งของมาตลอด ทุกออเดอร์ไม่เคยมีปัญหาเลยค่ะ"</p>
@@ -134,12 +179,12 @@
                 </div>
                 <!-- 8 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">C</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">C</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณชาญ</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ส่งอุปกรณ์คอมพิวเตอร์มาจาก Newegg ทีมงานดูแลของดีมาก มีฟิล์มกันกระแทกครบ ปลอดภัย 100%"</p>
@@ -147,12 +192,12 @@
                 </div>
                 <!-- 9 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">M</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">M</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณมาลี</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ตอบ Line ไวมากค่ะ มีปัญหาอะไรแอดมินช่วยแก้ไขให้ทันที ประทับใจการบริการหลังการขาย"</p>
@@ -160,12 +205,12 @@
                 </div>
                 <!-- 10 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">R</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">R</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณรัชนี</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"สั่งวิตามินกับเครื่องสำอางจาก iHerb แล้วส่งผ่าน BSS สะดวกมากค่ะ ราคาถูกกว่าส่งเองเยอะ"</p>
@@ -173,12 +218,12 @@
                 </div>
                 <!-- 11 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">D</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">D</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณดนัย</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"ส่งพัสดุหลายกล่องจาก US กลับไทย 5 วันก็ถึงแล้ว ทีมงานรวมกล่องให้เรียบร้อย ประหยัดค่าส่งครับ"</p>
@@ -186,12 +231,12 @@
                 </div>
                 <!-- 12 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">J</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">J</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณจิราพร</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"เพิ่งเริ่มใช้บริการค่ะ สมัครง่าย ได้รหัสลูกค้าเลย กรอกที่อยู่ warehouse ตอนสั่งของก็เสร็จ"</p>
@@ -199,12 +244,12 @@
                 </div>
                 <!-- 13 -->
                 <div class="min-w-full px-4">
-                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm p-6 max-w-lg mx-auto border">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-lg">B</div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">B</div>
                             <div>
                                 <p class="font-semibold text-gray-800">คุณบุญมี</p>
-                                <div class="text-yellow-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                                <div class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                             </div>
                         </div>
                         <p class="text-gray-600">"เป็นลูกค้า VIP ได้เรทพิเศษ คุ้มมากครับ ส่งของทุกอาทิตย์ ไม่เคยผิดหวังเลย บริการระดับสากล"</p>
@@ -239,7 +284,7 @@
             <tbody class="divide-y divide-gray-200">
                 {% for s in shipments %}
                 <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3"><a href="/track/{{ s.tracking_number }}" class="text-amber-600 font-medium hover:underline">{{ s.tracking_number }}</a></td>
+                    <td class="px-4 py-3"><a href="/track/{{ s.tracking_number }}" class="text-blue-600 font-medium hover:underline">{{ s.tracking_number }}</a></td>
                     <td class="px-4 py-3 text-sm text-gray-700">{{ s.description }}</td>
                     <td class="px-4 py-3">{% if s.port %}<span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono font-bold">{{ s.port }}</span>{% else %}-{% endif %}</td>
                     <td class="px-4 py-3 text-sm text-gray-500">{{ s.weight }}</td>
@@ -268,11 +313,11 @@ const total = c.children.length;
 const dots = document.getElementById('dots');
 for (let i = 0; i < total; i++) {
     const d = document.createElement('div');
-    d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i === 0 ? 'bg-yellow-500' : 'bg-white/60');
+    d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i === 0 ? 'bg-blue-600' : 'bg-white/60');
     d.onclick = () => go(i);
     dots.appendChild(d);
 }
-function go(n) { cur = ((n % total) + total) % total; c.style.transform = `translateX(-${cur*100}%)`; [...dots.children].forEach((d,i) => d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i===cur?'bg-yellow-500':'bg-white/60')); }
+function go(n) { cur = ((n % total) + total) % total; c.style.transform = `translateX(-${cur*100}%)`; [...dots.children].forEach((d,i) => d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i===cur?'bg-blue-600':'bg-white/60')); }
 function nextSlide() { go(cur+1); }
 function prevSlide() { go(cur-1); }
 setInterval(nextSlide, 5000);
@@ -284,11 +329,11 @@ const rTotal = rc.children.length;
 const rDots = document.getElementById('reviewDots');
 for (let i = 0; i < rTotal; i++) {
     const d = document.createElement('div');
-    d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i === 0 ? 'bg-yellow-500' : 'bg-gray-300');
+    d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i === 0 ? 'bg-blue-600' : 'bg-gray-300');
     d.onclick = () => goReview(i);
     rDots.appendChild(d);
 }
-function goReview(n) { rCur = ((n % rTotal) + rTotal) % rTotal; rc.style.transform = `translateX(-${rCur*100}%)`; [...rDots.children].forEach((d,i) => d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i===rCur?'bg-yellow-500':'bg-gray-300')); }
+function goReview(n) { rCur = ((n % rTotal) + rTotal) % rTotal; rc.style.transform = `translateX(-${rCur*100}%)`; [...rDots.children].forEach((d,i) => d.className = 'w-2 h-2 rounded-full cursor-pointer ' + (i===rCur?'bg-blue-600':'bg-gray-300')); }
 function nextReview() { goReview(rCur+1); }
 function prevReview() { goReview(rCur-1); }
 setInterval(nextReview, 6000);

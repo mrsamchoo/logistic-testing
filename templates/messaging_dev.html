@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaging Admin - Dev Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center">
+            <div class="text-6xl mb-4">💬</div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Messaging Admin Platform</h1>
+            <p class="text-gray-600 mb-6">React frontend is not built yet. Run the React dev server:</p>
+            <div class="bg-gray-900 text-green-400 rounded-lg p-4 text-left font-mono text-sm mb-6">
+                <p>cd messaging-frontend</p>
+                <p>npm install</p>
+                <p>npm run dev</p>
+            </div>
+            <p class="text-gray-500 text-sm mb-4">
+                React dev server will run on <strong>http://localhost:5173</strong><br>
+                API proxy configured to <strong>http://localhost:8080</strong>
+            </p>
+            <div class="border-t pt-4 mt-4">
+                <p class="text-gray-500 text-sm">Quick Links:</p>
+                <div class="flex gap-3 justify-center mt-2">
+                    <a href="/admin" class="text-blue-600 hover:underline text-sm">Admin Dashboard</a>
+                    <a href="/api/messaging/me" class="text-blue-600 hover:underline text-sm">Test API</a>
+                    <a href="/api/messaging/channels" class="text-blue-600 hover:underline text-sm">Channels API</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

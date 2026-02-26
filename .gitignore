@@ -4,7 +4,6 @@ __pycache__/
 *.pyo
 *.egg-info/
 dist/
-build/
 *.egg
 
 # Virtual environment
@@ -23,3 +22,9 @@ shipping.db
 
 # Claude
 .claude/
+
+# Node
+messaging-frontend/node_modules/
+
+# Media uploads (cached from LINE, user uploads)
+static/media/

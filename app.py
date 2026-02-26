@@ -1,6 +1,8 @@
 import os
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
+from flask_socketio import SocketIO
+from dotenv import load_dotenv
 from database import (
     init_db, add_customer, get_customer_by_code, get_all_customers,
     get_shipments_by_customer, get_shipment_by_tracking,
@@ -24,8 +26,21 @@ from database import (
     deactivate_customer, activate_customer, add_shipment,
 )
 
+load_dotenv()
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "shipping-secret-key-change-in-production")
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+
+# Register messaging blueprint
+from messaging import messaging_bp
+app.register_blueprint(messaging_bp)
+
+# Register SocketIO events
+from messaging.socketio_events import register_socketio_events
+register_socketio_events(socketio)
 
 
 # ============================================================
@@ -903,17 +918,80 @@ def admin_manage_delete(admin_id):
 # ============================================================
 
 
+# ============================================================
+# Messaging SPA (React) — catch-all route
+# ============================================================
+
+MESSAGING_BUILD_DIR = os.path.join(os.path.dirname(__file__), "messaging-frontend", "build")
+
+
+@app.route("/messaging/")
+@app.route("/messaging/<path:path>")
+@admin_required
+def messaging_spa(path=""):
+    # Serve static files from React build
+    if path and os.path.exists(os.path.join(MESSAGING_BUILD_DIR, path)):
+        return send_from_directory(MESSAGING_BUILD_DIR, path)
+    # Fall back to index.html for client-side routing
+    index_path = os.path.join(MESSAGING_BUILD_DIR, "index.html")
+    if os.path.exists(index_path):
+        return send_from_directory(MESSAGING_BUILD_DIR, "index.html")
+    # Dev mode: redirect to React dev server
+    return render_template("messaging_dev.html")
+
+
+# ============================================================
+# Serve media files from persistent disk (production)
+# ============================================================
+
+_DATA_DIR = os.environ.get("DATA_DIR", "")
+
+if _DATA_DIR:
+    # Production: serve /static/media/* from persistent disk /var/data/media/
+    @app.route("/static/media/<path:filename>")
+    def serve_media(filename):
+        media_dir = os.path.join(_DATA_DIR, "media")
+        return send_from_directory(media_dir, filename)
+
+
+# ============================================================
+# Ensure config dir exists for rates.json
+# ============================================================
+
+if _DATA_DIR:
+    _config_dir = os.path.join(_DATA_DIR, "config")
+    os.makedirs(_config_dir, exist_ok=True)
+    # Copy default rates.json if not exists on persistent disk
+    _rates_disk = os.path.join(_config_dir, "rates.json")
+    _rates_local = os.path.join(os.path.dirname(__file__), "config", "rates.json")
+    if not os.path.exists(_rates_disk) and os.path.exists(_rates_local):
+        import shutil
+        shutil.copy2(_rates_local, _rates_disk)
+
+
+# ============================================================
+# Run
+# ============================================================
+
+
 # Always init DB (needed for gunicorn in production)
 init_db()
 
+# Init messaging DB tables
+from messaging_db import init_messaging_db
+init_messaging_db()
+
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
     print("=" * 50)
     print("  US-TH Shipping Tracker is running!")
-    print("  Homepage:    http://localhost:8080/")
-    print("  Calculator:  http://localhost:8080/calculator")
-    print("  Register:    http://localhost:8080/register")
-    print("  Customer:    http://localhost:8080/customer")
-    print("  Admin:       http://localhost:8080/admin")
+    print(f"  Homepage:    http://localhost:{port}/")
+    print(f"  Calculator:  http://localhost:{port}/calculator")
+    print(f"  Register:    http://localhost:{port}/register")
+    print(f"  Customer:    http://localhost:{port}/customer")
+    print(f"  Admin:       http://localhost:{port}/admin")
+    print(f"  Messaging:   http://localhost:{port}/messaging/")
     print("  Default admin: admin / admin123 (super_admin)")
     print("=" * 50)
-    app.run(debug=True, host="0.0.0.0", port=8080)
+    socketio.run(app, debug=debug, host="0.0.0.0", port=port)
