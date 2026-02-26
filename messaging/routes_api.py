@@ -100,6 +100,22 @@ def api_update_org():
 # ============================================================
 
 
+def _get_webhook_url(channel):
+    """Build webhook URL using public base URL (works behind proxy/Render)."""
+    ch = dict(channel) if not isinstance(channel, dict) else channel
+    org = get_org_by_id(ch["org_id"])
+    settings = json.loads(dict(org).get("settings_json") or "{}") if org else {}
+    public_base = settings.get("public_base_url", "").rstrip("/")
+    if not public_base:
+        fwd_proto = request.headers.get("X-Forwarded-Proto", "https")
+        fwd_host = request.headers.get("X-Forwarded-Host") or request.headers.get("Host", "")
+        if fwd_host and "localhost" not in fwd_host:
+            public_base = f"{fwd_proto}://{fwd_host}"
+        else:
+            public_base = request.host_url.rstrip("/")
+    return f"{public_base}/webhooks/{ch['channel_type']}/{ch['id']}"
+
+
 @messaging_bp.route("/api/messaging/channels")
 @api_admin_required
 def api_list_channels():
@@ -110,6 +126,7 @@ def api_list_channels():
         ch_dict = _row_to_dict(ch)
         ch_dict["has_credentials"] = get_masked_credentials(ch["id"]) is not None
         ch_dict["channel_type_info"] = CHANNEL_TYPES.get(ch["channel_type"], {})
+        ch_dict["webhook_url"] = _get_webhook_url(ch)
         result.append(ch_dict)
     return jsonify(result)
 
@@ -126,7 +143,31 @@ def api_create_channel():
     if not name:
         return jsonify({"error": "Name is required"}), 400
     channel_id = create_channel(org_id, channel_type, name)
-    return jsonify({"id": channel_id, "success": True}), 201
+
+    # Save credentials if provided in same request
+    credentials = data.get("credentials")
+    verified = False
+    verify_message = ""
+    if credentials:
+        save_credentials(channel_id, channel_type, credentials)
+        # Auto-verify connection
+        try:
+            verified, verify_message = verify_channel_connection(channel_id)
+        except Exception:
+            verified = False
+            verify_message = "Could not verify connection"
+
+    # Build webhook URL
+    channel = get_channel(channel_id)
+    webhook_url = _get_webhook_url(channel) if channel else ""
+
+    return jsonify({
+        "id": channel_id,
+        "success": True,
+        "webhook_url": webhook_url,
+        "verified": verified,
+        "verify_message": verify_message,
+    }), 201
 
 
 @messaging_bp.route("/api/messaging/channels/<int:channel_id>")
@@ -138,6 +179,7 @@ def api_get_channel(channel_id):
     ch_dict = _row_to_dict(channel)
     ch_dict["masked_credentials"] = get_masked_credentials(channel_id)
     ch_dict["channel_type_info"] = CHANNEL_TYPES.get(channel["channel_type"], {})
+    ch_dict["webhook_url"] = _get_webhook_url(channel)
     return jsonify(ch_dict)
 
 
@@ -181,8 +223,7 @@ def api_get_webhook_url(channel_id):
     channel = get_channel(channel_id)
     if not channel:
         return jsonify({"error": "Channel not found"}), 404
-    base_url = request.host_url.rstrip("/")
-    webhook_url = f"{base_url}/webhooks/{channel['channel_type']}/{channel_id}"
+    webhook_url = _get_webhook_url(channel)
     return jsonify({"webhook_url": webhook_url})
 
 
