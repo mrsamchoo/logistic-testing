@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # Use persistent disk path on Render, or local path for development
 _DATA_DIR = os.environ.get("DATA_DIR", os.path.dirname(__file__))
+# Ensure DATA_DIR exists (prevents crash if persistent disk not yet attached)
+os.makedirs(_DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(_DATA_DIR, "shipping.db")
 RATES_PATH = os.path.join(_DATA_DIR, "config", "rates.json")
 
