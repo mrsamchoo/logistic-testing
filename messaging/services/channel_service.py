@@ -79,7 +79,7 @@ def verify_channel_connection(channel_id) -> tuple[bool, str]:
 
     try:
         if channel["channel_type"] == "line":
-            return _verify_line(creds)
+            return _verify_line(channel_id, creds)
         elif channel["channel_type"] == "facebook":
             return _verify_facebook(creds)
         elif channel["channel_type"] == "instagram":
@@ -90,7 +90,7 @@ def verify_channel_connection(channel_id) -> tuple[bool, str]:
         return False, f"Connection error: {str(e)}"
 
 
-def _verify_line(creds):
+def _verify_line(channel_id, creds):
     token = creds.get("channel_access_token", "")
     resp = requests.get(
         "https://api.line.me/v2/bot/info",
@@ -99,7 +99,7 @@ def _verify_line(creds):
     )
     if resp.status_code == 200:
         data = resp.json()
-        update_channel_verified(data.get("userId", ""))
+        update_channel_verified(channel_id)
         return True, f"Connected to LINE Bot: {data.get('displayName', 'Unknown')}"
     return False, f"LINE API error: {resp.status_code} - {resp.text}"
 
