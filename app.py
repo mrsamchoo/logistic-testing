@@ -32,6 +32,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "shipping-secret-key-change-in-production")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max upload
 
+# Enable gzip compression — reduces response size ~70%
+from flask_compress import Compress
+app.config["COMPRESS_MIN_SIZE"] = 500  # Compress responses > 500 bytes
+app.config["COMPRESS_ALGORITHM"] = "gzip"
+Compress(app)
+
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
@@ -48,6 +54,16 @@ register_socketio_events(socketio)
 # JSON error handlers for API routes (prevent HTML error pages)
 # ============================================================
 from flask import jsonify as _jsonify
+
+
+@app.after_request
+def add_cache_headers(response):
+    """Add cache headers to static assets for faster page loads."""
+    if request.path.startswith("/static/"):
+        # Static files (CSS, JS, images) — cache 1 day
+        response.cache_control.public = True
+        response.cache_control.max_age = 86400  # 1 day
+    return response
 
 
 @app.errorhandler(413)
@@ -952,13 +968,21 @@ MESSAGING_BUILD_DIR = os.path.join(os.path.dirname(__file__), "messaging-fronten
 @app.route("/messaging/<path:path>")
 @admin_required
 def messaging_spa(path=""):
-    # Serve static files from React build
+    # Serve static assets (JS/CSS) with long cache — they have content hashes
     if path and os.path.exists(os.path.join(MESSAGING_BUILD_DIR, path)):
-        return send_from_directory(MESSAGING_BUILD_DIR, path)
-    # Fall back to index.html for client-side routing
+        response = send_from_directory(MESSAGING_BUILD_DIR, path)
+        if path.startswith("assets/"):
+            # Hashed filenames (e.g. index-Xe9IifET.js) = cache 1 year
+            response.cache_control.public = True
+            response.cache_control.max_age = 31536000  # 1 year
+            response.cache_control.immutable = True
+        return response
+    # SPA fallback — index.html should NOT be cached (may change on deploy)
     index_path = os.path.join(MESSAGING_BUILD_DIR, "index.html")
     if os.path.exists(index_path):
-        return send_from_directory(MESSAGING_BUILD_DIR, "index.html")
+        response = send_from_directory(MESSAGING_BUILD_DIR, "index.html")
+        response.cache_control.no_cache = True
+        return response
     # Dev mode: redirect to React dev server
     return render_template("messaging_dev.html")
 
