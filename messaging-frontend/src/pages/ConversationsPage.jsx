@@ -270,6 +270,12 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
       return;
     }
 
+    // Check file size (max 10 MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('ไฟล์ใหญ่เกินไป (สูงสุด 10 MB)');
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -279,9 +285,19 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
         method: 'POST',
         body: formData,
       });
+
+      // Handle non-JSON responses (e.g. server error pages)
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Server error (${resp.status}). Please try again.`);
+      }
+
       const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
       if (data.warning) {
-        console.warn(data.warning);
+        alert(data.warning);
       }
       loadMessages();
     } catch (err) {

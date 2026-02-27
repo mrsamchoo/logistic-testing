@@ -786,97 +786,124 @@ def api_export_all_conversations():
 @api_admin_required
 def api_upload_media(conversation_id):
     """Upload an image or video and send it to the customer."""
-    from messaging.services.message_service import send_admin_reply
+    import uuid
+    import traceback
     from messaging_db import add_message
 
-    if "file" not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+    try:
+        if "file" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
 
-    file = request.files["file"]
-    if not file.filename:
-        return jsonify({"error": "No file selected"}), 400
+        file = request.files["file"]
+        if not file.filename:
+            return jsonify({"error": "No file selected"}), 400
 
-    # Determine message type
-    content_type = file.content_type or ""
-    if content_type.startswith("image/"):
-        msg_type = "image"
-    elif content_type.startswith("video/"):
-        msg_type = "video"
-    else:
-        return jsonify({"error": "Only image and video files are supported"}), 400
+        # Check file size (max 10 MB)
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+        if file_size > 10 * 1024 * 1024:
+            return jsonify({"error": "File too large. Maximum 10 MB."}), 400
 
-    # Save file locally (persistent disk in production)
-    import uuid
-    os.makedirs(MEDIA_DIR, exist_ok=True)
-    ext = os.path.splitext(file.filename)[1] or (".jpg" if msg_type == "image" else ".mp4")
-    filename = f"upload_{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(MEDIA_DIR, filename)
-    file.save(filepath)
-
-    # Get conversation info
-    conv = get_conversation(conversation_id)
-    if not conv:
-        return jsonify({"error": "Conversation not found"}), 404
-
-    channel = get_channel(conv["channel_id"])
-    if not channel:
-        return jsonify({"error": "Channel not found"}), 404
-
-    # Build public media URL (LINE requires HTTPS publicly accessible URL)
-    org = get_org_by_id(conv["org_id"])
-    org_settings = json.loads(dict(org).get("settings_json") or "{}") if org else {}
-    public_base = org_settings.get("public_base_url", "").rstrip("/")
-    if not public_base:
-        # Fallback: try to detect from request headers
-        fwd_proto = request.headers.get("X-Forwarded-Proto", "")
-        fwd_host = request.headers.get("X-Forwarded-Host", "")
-        if fwd_host and "localhost" not in fwd_host:
-            public_base = f"{fwd_proto or 'https'}://{fwd_host}"
+        # Determine message type
+        content_type = file.content_type or ""
+        if content_type.startswith("image/"):
+            msg_type = "image"
+        elif content_type.startswith("video/"):
+            msg_type = "video"
         else:
-            public_base = request.host_url.rstrip("/")
+            return jsonify({"error": "Only image and video files are supported"}), 400
 
-    media_url = f"{public_base}/static/media/{filename}"
+        # Save file locally (persistent disk in production)
+        os.makedirs(MEDIA_DIR, exist_ok=True)
+        ext = os.path.splitext(file.filename)[1] or (".jpg" if msg_type == "image" else ".mp4")
+        filename = f"upload_{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(MEDIA_DIR, filename)
+        file.save(filepath)
 
-    creds = load_credentials(channel["id"])
-    if not creds:
-        return jsonify({"error": "Channel credentials not configured"}), 400
+        # Get conversation info
+        conv = get_conversation(conversation_id)
+        if not conv:
+            return jsonify({"error": "Conversation not found"}), 404
 
-    # Send via platform adapter
-    from messaging.platforms.line_adapter import LineAdapter
-    from messaging.platforms.facebook_adapter import FacebookAdapter
-    from messaging.platforms.instagram_adapter import InstagramAdapter
+        channel = get_channel(conv["channel_id"])
+        if not channel:
+            return jsonify({"error": "Channel not found"}), 404
 
-    adapters = {"line": LineAdapter, "facebook": FacebookAdapter, "instagram": InstagramAdapter}
-    adapter_class = adapters.get(channel["channel_type"])
-    if not adapter_class:
-        return jsonify({"error": "Unsupported platform"}), 400
+        # Build public media URL (LINE requires HTTPS publicly accessible URL)
+        org = get_org_by_id(conv["org_id"])
+        org_settings = json.loads(dict(org).get("settings_json") or "{}") if org else {}
+        public_base = org_settings.get("public_base_url", "").rstrip("/")
+        if not public_base:
+            fwd_proto = request.headers.get("X-Forwarded-Proto", "")
+            fwd_host = request.headers.get("X-Forwarded-Host", "")
+            if fwd_host and "localhost" not in fwd_host:
+                public_base = f"{fwd_proto or 'https'}://{fwd_host}"
+            else:
+                public_base = request.host_url.rstrip("/")
 
-    adapter = adapter_class(creds)
-    success, error = adapter.send_message(
-        recipient_id=conv["platform_user_id"],
-        message_type=msg_type,
-        content=f"[{msg_type.title()}]",
-        media_url=media_url,
-    )
+        media_url = f"{public_base}/static/media/{filename}"
 
-    # Store message in DB regardless (so admin sees it in chat)
-    import json
-    admin_id = session["admin_id"]
-    metadata = {"filename": filename, "media_url": f"/static/media/{filename}", "content_type": content_type}
-    message_id = add_message(
-        conversation_id=conversation_id,
-        org_id=conv["org_id"],
-        sender_type="admin",
-        sender_id=str(admin_id),
-        content=f"[{msg_type.title()}]",
-        message_type=msg_type,
-        metadata_json=json.dumps(metadata),
-    )
+        # Try to send via platform — but save to DB regardless
+        delivery_success = False
+        delivery_error = ""
+        creds = load_credentials(channel["id"])
 
-    if success:
-        return jsonify({"success": True, "message_id": message_id, "media_url": f"/static/media/{filename}"})
-    else:
-        return jsonify({"success": True, "message_id": message_id, "media_url": f"/static/media/{filename}", "warning": f"Saved but LINE delivery failed: {error}"})
+        if creds:
+            try:
+                from messaging.platforms.line_adapter import LineAdapter
+                from messaging.platforms.facebook_adapter import FacebookAdapter
+                from messaging.platforms.instagram_adapter import InstagramAdapter
+
+                adapters = {"line": LineAdapter, "facebook": FacebookAdapter, "instagram": InstagramAdapter}
+                adapter_class = adapters.get(channel["channel_type"])
+
+                if adapter_class:
+                    adapter = adapter_class(creds)
+                    # LINE supports media_url, others may not — use try/except
+                    try:
+                        delivery_success, delivery_error = adapter.send_message(
+                            recipient_id=conv["platform_user_id"],
+                            message_type=msg_type,
+                            content=f"[{msg_type.title()}]",
+                            media_url=media_url,
+                        )
+                    except TypeError:
+                        # Adapter doesn't accept media_url (Facebook/Instagram)
+                        delivery_success, delivery_error = adapter.send_message(
+                            recipient_id=conv["platform_user_id"],
+                            message_type=msg_type,
+                            content=f"[{msg_type.title()}]",
+                        )
+                else:
+                    delivery_error = "Unsupported platform"
+            except Exception as e:
+                print(f"[Upload] Platform delivery error: {e}")
+                delivery_error = str(e)
+        else:
+            delivery_error = "No credentials configured"
+
+        # Store message in DB regardless (so admin sees it in chat)
+        admin_id = session.get("admin_id", "")
+        metadata = {"filename": filename, "media_url": f"/static/media/{filename}", "content_type": content_type}
+        message_id = add_message(
+            conversation_id=conversation_id,
+            org_id=conv["org_id"],
+            sender_type="admin",
+            sender_id=str(admin_id),
+            content=f"[{msg_type.title()}]",
+            message_type=msg_type,
+            metadata_json=json.dumps(metadata),
+        )
+
+        result = {"success": True, "message_id": message_id, "media_url": f"/static/media/{filename}"}
+        if not delivery_success and delivery_error:
+            result["warning"] = f"Saved but delivery failed: {delivery_error}"
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"[Upload] Unexpected error: {traceback.format_exc()}")
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 
 # ============================================================

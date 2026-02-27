@@ -30,6 +30,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "shipping-secret-key-change-in-production")
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max upload
 
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
@@ -41,6 +42,28 @@ app.register_blueprint(messaging_bp)
 # Register SocketIO events
 from messaging.socketio_events import register_socketio_events
 register_socketio_events(socketio)
+
+
+# ============================================================
+# JSON error handlers for API routes (prevent HTML error pages)
+# ============================================================
+from flask import jsonify as _jsonify
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """Return JSON for file-too-large errors instead of HTML."""
+    if request.path.startswith("/api/"):
+        return _jsonify({"error": "File too large. Maximum 16 MB."}), 413
+    return "File too large", 413
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    """Return JSON for API 500 errors instead of HTML."""
+    if request.path.startswith("/api/"):
+        return _jsonify({"error": "Internal server error"}), 500
+    return "Internal server error", 500
 
 
 # ============================================================
