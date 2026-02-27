@@ -28,3 +28,4 @@ messaging-frontend/node_modules/
 
 # Media uploads (cached from LINE, user uploads)
 static/media/
+backups/

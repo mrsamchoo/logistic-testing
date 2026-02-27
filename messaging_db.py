@@ -631,19 +631,47 @@ def add_message(conversation_id, org_id, sender_type, content, sender_id="",
     return message_id
 
 
-def get_messages_for_conversation(conversation_id, limit=50, offset=0):
+def get_messages_for_conversation(conversation_id, limit=50, offset=0, before_id=None):
     conn = get_db()
-    messages = conn.execute(
-        """SELECT m.*, a.username AS admin_username, a.display_name AS admin_display_name
-           FROM messages m
-           LEFT JOIN admins a ON m.sender_type = 'admin' AND CAST(m.sender_id AS INTEGER) = a.id
-           WHERE m.conversation_id = ?
-           ORDER BY m.created_at ASC
-           LIMIT ? OFFSET ?""",
-        (conversation_id, limit, offset),
-    ).fetchall()
+    if before_id:
+        # Cursor-based: get messages older than before_id, return in ASC order
+        messages = conn.execute(
+            """SELECT * FROM (
+                 SELECT m.*, a.username AS admin_username, a.display_name AS admin_display_name
+                 FROM messages m
+                 LEFT JOIN admins a ON m.sender_type = 'admin' AND CAST(m.sender_id AS INTEGER) = a.id
+                 WHERE m.conversation_id = ? AND m.id < ?
+                 ORDER BY m.created_at DESC
+                 LIMIT ?
+               ) sub ORDER BY sub.created_at ASC""",
+            (conversation_id, before_id, limit),
+        ).fetchall()
+    else:
+        # Default: get the NEWEST N messages, returned in ASC order for display
+        messages = conn.execute(
+            """SELECT * FROM (
+                 SELECT m.*, a.username AS admin_username, a.display_name AS admin_display_name
+                 FROM messages m
+                 LEFT JOIN admins a ON m.sender_type = 'admin' AND CAST(m.sender_id AS INTEGER) = a.id
+                 WHERE m.conversation_id = ?
+                 ORDER BY m.created_at DESC
+                 LIMIT ? OFFSET ?
+               ) sub ORDER BY sub.created_at ASC""",
+            (conversation_id, limit, offset),
+        ).fetchall()
     conn.close()
     return messages
+
+
+def get_message_count(conversation_id):
+    """Get total message count for a conversation."""
+    conn = get_db()
+    count = conn.execute(
+        "SELECT COUNT(*) FROM messages WHERE conversation_id = ?",
+        (conversation_id,),
+    ).fetchone()[0]
+    conn.close()
+    return count
 
 
 def mark_messages_read(conversation_id):

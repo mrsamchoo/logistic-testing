@@ -1004,6 +1004,20 @@ init_db()
 from messaging_db import init_messaging_db
 init_messaging_db()
 
+# ============================================================
+# Auto-Backup System
+# ============================================================
+from backup_service import perform_backup, start_auto_backup
+
+try:
+    backup_file = perform_backup()
+    print(f"[Backup] Startup backup: {backup_file}")
+except Exception as e:
+    print(f"[Backup] Startup backup error: {e}")
+
+# Start periodic backup every 6 hours
+start_auto_backup(interval_hours=6)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     debug = os.environ.get("FLASK_DEBUG", "1") == "1"

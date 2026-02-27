@@ -391,8 +391,13 @@ def api_update_conversation(conversation_id):
 def api_get_messages(conversation_id):
     limit = request.args.get("limit", 50, type=int)
     offset = request.args.get("offset", 0, type=int)
-    messages = get_messages_for_conversation(conversation_id, limit=limit, offset=offset)
-    return jsonify(_rows_to_list(messages))
+    before_id = request.args.get("before_id", type=int)
+    messages = get_messages_for_conversation(
+        conversation_id, limit=limit, offset=offset, before_id=before_id
+    )
+    from messaging_db import get_message_count
+    total = get_message_count(conversation_id)
+    return jsonify({"messages": _rows_to_list(messages), "total": total})
 
 
 @messaging_bp.route("/api/messaging/conversations/<int:conversation_id>/messages", methods=["POST"])
@@ -1088,3 +1093,81 @@ def api_customer_behavior():
         "monthly_trend": monthly_data,
         "avg_response_time_seconds": round(avg_response_seconds, 1),
     })
+
+
+# ============================================================
+# Backup Management
+# ============================================================
+
+
+@messaging_bp.route("/api/messaging/backups")
+@api_admin_required
+def api_list_backups():
+    """List all available database backups."""
+    from backup_service import get_backup_list
+    return jsonify(get_backup_list())
+
+
+@messaging_bp.route("/api/messaging/backups/create", methods=["POST"])
+@api_admin_required
+def api_create_backup():
+    """Manually trigger a database backup."""
+    from backup_service import perform_backup
+    try:
+        filename = perform_backup()
+        return jsonify({"success": True, "filename": filename})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@messaging_bp.route("/api/messaging/backups/<filename>/download")
+@api_admin_required
+def api_download_backup(filename):
+    """Download a specific backup file."""
+    from flask import send_from_directory
+    from backup_service import BACKUP_DIR, is_valid_backup_filename
+    if not is_valid_backup_filename(filename):
+        return jsonify({"error": "Invalid filename"}), 400
+    filepath = os.path.join(BACKUP_DIR, filename)
+    if not os.path.exists(filepath):
+        return jsonify({"error": "Backup not found"}), 404
+    return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
+
+
+@messaging_bp.route("/api/messaging/backups/restore", methods=["POST"])
+@api_admin_required
+def api_restore_backup():
+    """Restore database from a backup. Creates a pre-restore backup first."""
+    import uuid
+    from backup_service import BACKUP_DIR, restore_from_backup, perform_backup, is_valid_backup_filename
+
+    try:
+        # Always create a pre-restore backup for safety
+        pre_backup = perform_backup()
+        print(f"[Restore] Pre-restore backup: {pre_backup}")
+    except Exception as e:
+        return jsonify({"error": f"Failed to create safety backup: {e}"}), 500
+
+    if "file" in request.files:
+        # Restore from uploaded file
+        file = request.files["file"]
+        temp_path = os.path.join(BACKUP_DIR, f"restore_upload_{uuid.uuid4().hex}.db")
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+        file.save(temp_path)
+        success, msg = restore_from_backup(temp_path)
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+    else:
+        # Restore from existing backup by filename
+        data = request.get_json() or {}
+        filename = data.get("filename", "")
+        if not is_valid_backup_filename(filename):
+            return jsonify({"error": "Invalid backup filename"}), 400
+        backup_path = os.path.join(BACKUP_DIR, filename)
+        success, msg = restore_from_backup(backup_path)
+
+    if success:
+        return jsonify({"success": True, "message": msg})
+    return jsonify({"error": msg}), 400

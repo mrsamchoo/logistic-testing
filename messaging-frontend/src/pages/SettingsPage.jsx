@@ -53,6 +53,158 @@ function AiToggle() {
   );
 }
 
+function BackupSection() {
+  const [backups, setBackups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoringFile, setRestoringFile] = useState('');
+
+  const loadBackups = () => {
+    api.get('/backups').then(setBackups).catch(() => []).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { loadBackups(); }, []);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const data = await api.post('/backups/create');
+      loadBackups();
+    } catch (e) {
+      alert('Backup error: ' + e.message);
+    }
+    setCreating(false);
+  };
+
+  const handleRestoreFromList = async (filename) => {
+    if (!confirm(`คุณต้องการคืนค่าฐานข้อมูลจาก ${filename} ใช่ไหม?\n\nระบบจะสร้าง backup ก่อนอัตโนมัติ`)) return;
+    setRestoringFile(filename);
+    try {
+      const data = await api.post('/backups/restore', { filename });
+      alert('คืนค่าสำเร็จ! หน้าจะรีโหลด');
+      window.location.reload();
+    } catch (e) {
+      alert('Restore error: ' + e.message);
+    }
+    setRestoringFile('');
+  };
+
+  const handleUploadRestore = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!confirm('คุณต้องการคืนค่าฐานข้อมูลจากไฟล์ที่อัปโหลดใช่ไหม?\n\nระบบจะสร้าง backup ก่อนอัตโนมัติ')) {
+      e.target.value = '';
+      return;
+    }
+    setRestoring(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const resp = await fetch('/api/messaging/backups/restore', {
+        method: 'POST',
+        body: formData,
+      });
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Server error (${resp.status})`);
+      }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Restore failed');
+      alert('คืนค่าสำเร็จ! หน้าจะรีโหลด');
+      window.location.reload();
+    } catch (e) {
+      alert('Restore error: ' + e.message);
+    }
+    setRestoring(false);
+    e.target.value = '';
+  };
+
+  const formatDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch { return iso; }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border p-5">
+      <div className="flex items-start gap-4">
+        <span className="text-3xl">💾</span>
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-800">Database Backup</h3>
+          <p className="text-sm text-gray-500 mt-0.5 mb-3">
+            Auto-backup ทุก 6 ชม. + backup ตอน server เริ่มทำงาน (เก็บล่าสุด 5 ตัว)
+          </p>
+
+          {/* Create + Upload buttons */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {creating ? '⏳ กำลังสร้าง...' : '📦 สร้าง Backup ตอนนี้'}
+            </button>
+            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer border">
+              {restoring ? '⏳ กำลัง Restore...' : '📂 Restore จากไฟล์'}
+              <input type="file" accept=".db" onChange={handleUploadRestore} className="hidden" disabled={restoring} />
+            </label>
+          </div>
+
+          {/* Backup list */}
+          {loading ? (
+            <p className="text-sm text-gray-400">กำลังโหลด...</p>
+          ) : backups.length === 0 ? (
+            <p className="text-sm text-gray-400">ยังไม่มี backup</p>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">ไฟล์</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">ขนาด</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-600">วันที่</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {backups.map((b, i) => (
+                    <tr key={b.filename} className={i === 0 ? 'bg-green-50' : ''}>
+                      <td className="px-3 py-2 font-mono text-xs">
+                        {i === 0 && <span className="text-green-600 mr-1">●</span>}
+                        {b.filename}
+                      </td>
+                      <td className="px-3 py-2 text-gray-500">{b.size_mb} MB</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(b.created_at)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex gap-1 justify-end">
+                          <a
+                            href={`/api/messaging/backups/${b.filename}/download`}
+                            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
+                          >
+                            ⬇ Download
+                          </a>
+                          <button
+                            onClick={() => handleRestoreFromList(b.filename)}
+                            disabled={restoringFile === b.filename}
+                            className="px-2 py-1 text-xs bg-orange-50 hover:bg-orange-100 rounded text-orange-600 disabled:opacity-50"
+                          >
+                            {restoringFile === b.filename ? '⏳' : '↩'} Restore
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PublicUrlSetting() {
   const [url, setUrl] = useState('');
   const [saved, setSaved] = useState('');
@@ -131,6 +283,9 @@ export default function SettingsPage() {
 
         {/* Public URL */}
         <PublicUrlSetting />
+
+        {/* Backup */}
+        <BackupSection />
 
         {settingsSections.map((s) => (
           <Link

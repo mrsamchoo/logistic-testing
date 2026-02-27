@@ -177,15 +177,64 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
   const [lightbox, setLightbox] = useState({ src: null, type: 'image' });
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const fileInputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const isInitialLoad = useRef(true);
   const socket = useSocket();
 
   const loadMessages = useCallback(() => {
     if (!conversationId) return;
+    // Reset pagination state on conversation change
+    setHasMore(false);
+    isInitialLoad.current = true;
     api.get(`/conversations/${conversationId}`).then(setConversation);
-    api.get(`/conversations/${conversationId}/messages?limit=100`).then(setMessages);
+    api.get(`/conversations/${conversationId}/messages?limit=50`).then((data) => {
+      setMessages(data.messages);
+      setHasMore(data.messages.length < data.total);
+    });
     api.post(`/conversations/${conversationId}/read`).catch(() => {});
   }, [conversationId]);
+
+  // Auto-scroll to bottom on initial load
+  useEffect(() => {
+    if (isInitialLoad.current && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView();
+      isInitialLoad.current = false;
+    }
+  }, [messages]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!conversationId || loadingMore || !hasMore || messages.length === 0) return;
+    setLoadingMore(true);
+
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    const oldestId = messages[0].id;
+
+    try {
+      const data = await api.get(
+        `/conversations/${conversationId}/messages?limit=50&before_id=${oldestId}`
+      );
+      if (data.messages.length === 0) {
+        setHasMore(false);
+      } else {
+        setMessages(prev => [...data.messages, ...prev]);
+        setHasMore(data.messages.length >= 50);
+        // Restore scroll position after prepending older messages
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load older messages:', e);
+    }
+    setLoadingMore(false);
+  }, [conversationId, loadingMore, hasMore, messages]);
 
   const loadTags = useCallback(() => {
     if (!conversationId) return;
@@ -203,7 +252,23 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
 
     const handler = (data) => {
       if (data.conversation_id === conversationId) {
-        loadMessages();
+        // Fetch only the newest message and append (don't reload all + lose older messages)
+        api.get(`/conversations/${conversationId}/messages?limit=1`).then((resp) => {
+          if (resp.messages.length > 0) {
+            const newMsg = resp.messages[0];
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+            // Scroll to new message
+            requestAnimationFrame(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            });
+          }
+        }).catch(() => {});
+        // Also refresh conversation metadata (unread count, last message)
+        api.get(`/conversations/${conversationId}`).then(setConversation);
+        api.post(`/conversations/${conversationId}/read`).catch(() => {});
       }
     };
     socket.on('new_message', handler);
@@ -220,7 +285,17 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
     try {
       await api.post(`/conversations/${conversationId}/messages`, { content: input.trim() });
       setInput('');
-      loadMessages();
+      // Fetch the newest message and append
+      const resp = await api.get(`/conversations/${conversationId}/messages?limit=1`);
+      if (resp.messages.length > 0) {
+        const sent = resp.messages[0];
+        setMessages(prev => {
+          if (prev.some(m => m.id === sent.id)) return prev;
+          return [...prev, sent];
+        });
+      }
+      requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
+      if (onConversationUpdated) onConversationUpdated();
     } catch (e) {
       alert(e.message);
     }
@@ -417,7 +492,20 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+        {/* Load older messages button */}
+        {hasMore && (
+          <div className="text-center py-2">
+            <button
+              onClick={loadOlderMessages}
+              disabled={loadingMore}
+              className="text-xs px-4 py-2 bg-white border rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {loadingMore ? '⏳ กำลังโหลด...' : '⬆ โหลดข้อความเก่า'}
+            </button>
+          </div>
+        )}
+
         {messages.map((msg) => {
           // Enrich metadata with channel_id for media proxy
           const enrichedMsg = { ...msg };
@@ -436,6 +524,7 @@ function ChatPanel({ conversationId, onConversationUpdated }) {
             />
           );
         })}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* AI Suggestion */}
